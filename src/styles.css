@@ -1,10 +1,27 @@
 :root {
   color-scheme: light;
-  font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
-  background: #f6f7f2;
-  color: #17211c;
+  --fg: #111;
+  --muted: #555;
+  --accent: #111;
+  --border: #d4d4d4;
+  --bg: #fff;
+  --code-bg: #f5f5f5;
+  --card-bg: #fff;
+  --card-hover-border: #111;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --fg: #f0f0f0;
+    --muted: #999;
+    --accent: #f0f0f0;
+    --border: #333;
+    --bg: #0a0a0a;
+    --code-bg: #1a1a1a;
+    --card-bg: #111;
+    --card-hover-border: #f0f0f0;
+  }
 }
 
 * {
@@ -15,6 +32,11 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
+  color: var(--fg);
+  background: var(--bg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  line-height: 1.65;
 }
 
 button {
@@ -25,18 +47,57 @@ input {
   font: inherit;
 }
 
-.shell {
-  width: min(100% - 32px, 880px);
+.wrap {
+  max-width: 760px;
   margin: 0 auto;
-  padding: 72px 0;
+  padding: 1.5rem 1.25rem 4rem;
+}
+
+header.site {
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2rem;
+}
+
+header.site p {
+  margin: 0 0 0.25rem;
+}
+
+header.site a.brand {
+  color: var(--fg);
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+nav.site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin: 0.25rem 0 1rem;
+  font-size: 0.9rem;
+}
+
+nav.site-nav a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+nav.site-nav a:hover {
+  color: var(--fg);
+}
+
+footer.site {
+  border-top: 1px solid var(--border);
+  margin-top: 3rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.85rem;
 }
 
 .eyebrow {
-  margin: 0 0 16px;
-  color: #3d6f6b;
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0;
+  margin: 0 0 0.25rem;
+  color: var(--muted);
+  font-size: 0.9rem;
 }
 
 h1,
@@ -49,36 +110,33 @@ span {
 }
 
 h1 {
-  max-width: 780px;
-  margin: 0;
-  font-size: clamp(3rem, 12vw, 6.8rem);
-  line-height: 0.92;
+  margin: 0 0 0.5rem;
+  font-size: 2rem;
+  line-height: 1.2;
 }
 
 .lede {
-  max-width: 640px;
-  margin: 24px 0 48px;
-  color: #40534a;
-  font-size: 1.25rem;
-  line-height: 1.55;
+  margin: 0 0 2rem;
+  color: var(--muted);
+  font-size: 0.95rem;
 }
 
-.signup,
-.preview,
-.result {
-  border: 1px solid #ccd5c4;
-  border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 12px 40px rgb(23 33 28 / 0.08);
+.blog-card {
+  display: block;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+  color: inherit;
+  background: var(--card-bg);
 }
 
 .signup,
 .preview {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 24px;
+  gap: 1rem;
   align-items: center;
-  padding: 24px;
 }
 
 .signup {
@@ -91,16 +149,16 @@ h1 {
 
 .signup h2,
 .preview h2 {
-  margin: 0 0 8px;
-  font-size: 1.35rem;
+  margin: 0 0 0.25rem;
+  font-size: 1.25rem;
+  line-height: 1.2;
 }
 
 .signup p,
 .preview p,
 .result p {
   margin: 0;
-  color: #526257;
-  line-height: 1.55;
+  color: var(--muted);
 }
 
 form {
@@ -109,9 +167,9 @@ form {
 }
 
 label {
-  color: #40534a;
-  font-size: 0.88rem;
-  font-weight: 800;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
 .form-row {
@@ -123,41 +181,43 @@ label {
 input {
   min-height: 44px;
   min-width: 0;
-  border: 1px solid #b8c4b0;
-  border-radius: 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
   padding: 0 12px;
-  color: #17211c;
+  color: var(--fg);
+  background: var(--bg);
 }
 
 input:focus {
-  outline: 2px solid #3d6f6b;
+  outline: 2px solid var(--fg);
   outline-offset: 2px;
 }
 
 button {
   min-height: 44px;
   padding: 0 18px;
-  border: 0;
-  border-radius: 6px;
-  background: #d94f30;
-  color: #ffffff;
-  font-weight: 800;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card-bg);
+  color: var(--fg);
+  font-weight: 600;
   cursor: pointer;
 }
 
 button:hover,
 button:focus-visible {
-  background: #b93e25;
+  border-color: var(--card-hover-border);
 }
 
 .result {
-  margin-top: 20px;
-  padding: 22px 24px;
+  margin: 0 0 1rem;
+  padding: 0;
 }
 
 .issue-card h3 {
   margin: 0 0 8px;
   font-size: 1.1rem;
+  line-height: 1.2;
 }
 
 .issue-card p {
@@ -166,8 +226,8 @@ button:focus-visible {
 
 .issue-card small,
 .tagline {
-  color: #3d6f6b;
-  font-weight: 800;
+  color: var(--muted);
+  font-weight: 600;
 }
 
 .tagline {
@@ -181,26 +241,24 @@ button:focus-visible {
 }
 
 .notice strong {
-  color: #17211c;
+  color: var(--fg);
 }
 
 .notice span {
-  color: #526257;
-  line-height: 1.55;
+  color: var(--muted);
 }
 
 .notice.error strong {
-  color: #b93e25;
+  color: var(--fg);
 }
 
 .notice.success strong {
-  color: #2f6b45;
+  color: var(--fg);
 }
 
 @media (max-width: 640px) {
-  .shell {
-    width: min(100% - 24px, 880px);
-    padding: 44px 0;
+  .wrap {
+    padding: 1.25rem 1rem 3rem;
   }
 
   .signup,

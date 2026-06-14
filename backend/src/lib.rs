@@ -1,6 +1,6 @@
-const LATEST_ISSUE: &[u8] = br#"<article class="issue-card" data-testid="latest-issue"><p class="tagline">Latest issue</p><h3>Orbital industry, lunar logistics, and deep-space signals</h3><p>A short-form editorial briefing for readers tracking the spacefaring economy without the mission-control noise.</p><small>@spacefaringnews</small></article>"#;
-const SUBSCRIBE_SUCCESS: &[u8] = br#"<div class="notice success" data-testid="signup-success"><strong>You are on the list.</strong><span>The first Spacefaring News dispatch will find you when launch cadence begins.</span></div>"#;
-const SUBSCRIBE_INVALID: &[u8] = br#"<div class="notice error" data-testid="signup-error"><strong>Check that email.</strong><span>Use a valid address so the newsletter has somewhere to land.</span></div>"#;
+const LATEST_ISSUE: &[u8] = br#"<article class="issue-card blog-card" data-testid="latest-issue"><p class="tagline">Latest issue</p><h3>Orbital industry, lunar logistics, and deep-space signals</h3><p>A short-form editorial briefing for readers tracking the spacefaring economy without the mission-control noise.</p><small>@spacefaringnews</small></article>"#;
+const SUBSCRIBE_SUCCESS: &[u8] = br#"<div class="notice success blog-card" data-testid="signup-success"><strong>You are on the list.</strong><span>The first Spacefaring News dispatch will find you when launch cadence begins.</span></div>"#;
+const SUBSCRIBE_INVALID: &[u8] = br#"<div class="notice error blog-card" data-testid="signup-error"><strong>Check that email.</strong><span>Use a valid address so the newsletter has somewhere to land.</span></div>"#;
 
 #[no_mangle]
 pub extern "C" fn latest_issue_ptr() -> *const u8 {

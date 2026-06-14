@@ -10,17 +10,25 @@
     <title>Spacefaring News</title>
   </head>
   <body>
-    <main class="shell">
-      <header class="masthead">
+    <div class="wrap">
+      <header class="site">
+        <p><a class="brand" href="/">Spacefaring News</a></p>
+        <nav class="site-nav">
+          <a href="#dispatch">Dispatch</a>
+          <a href="#preview">Latest</a>
+          <a href="https://spacefaring-news.pages.dev">Archive</a>
+        </nav>
+      </header>
+
+      <main>
         <p class="eyebrow">SPACEFARING</p>
         <h1>Spacefaring News</h1>
         <p class="lede">
           A concise newsletter for the people, missions, markets, and machines
           expanding life beyond Earth.
         </p>
-      </header>
 
-      <section class="signup" aria-labelledby="signup-title">
+      <section id="dispatch" class="signup blog-card" aria-labelledby="signup-title">
         <div>
           <h2 id="signup-title">Get the dispatch</h2>
           <p>
@@ -53,7 +61,7 @@
         <p>No spam, no firehose. Just the useful signal from @spacefaringnews.</p>
       </section>
 
-      <section class="preview" aria-labelledby="preview-title">
+      <section id="preview" class="preview blog-card" aria-labelledby="preview-title">
         <div>
           <p class="tagline">Today in Spacefaring News...</p>
           <h2 id="preview-title">Read the shape before the archive exists</h2>
@@ -71,7 +79,12 @@
       <section id="latest-issue" class="result" aria-live="polite">
         <p>The archive can wait. The voice comes first.</p>
       </section>
-    </main>
+      </main>
+
+      <footer class="site">
+        <p>2026 - Spacefaring News</p>
+      </footer>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
