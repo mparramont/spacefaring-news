@@ -121,7 +121,7 @@ export class D1NewsStore implements NewsStore {
   }
 
   async sourcesWithLatest() {
-    return this.db
+    const result = await this.db
       .prepare(
         `WITH latest AS (
           SELECT
@@ -163,6 +163,8 @@ export class D1NewsStore implements NewsStore {
           sources.title ASC`,
       )
       .all();
+
+    return result.results ?? [];
   }
 
   async stats() {
