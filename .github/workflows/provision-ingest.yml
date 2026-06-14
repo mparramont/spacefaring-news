@@ -1,0 +1,44 @@
+name: Provision ingestion backend
+
+on:
+  workflow_dispatch:
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Find or create D1 database
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          list_json="$(npx wrangler d1 list --json)"
+          database_id="$(node -e 'const dbs = JSON.parse(process.argv[1]); const db = dbs.find((item) => item.name === "spacefaring-news"); process.stdout.write(db?.uuid ?? db?.id ?? "");' "$list_json")"
+
+          if [ -z "$database_id" ]; then
+            create_output="$(npx wrangler d1 create spacefaring-news 2>&1)"
+            printf '%s\n' "$create_output"
+            database_id="$(printf '%s\n' "$create_output" | node -e 'let input = ""; process.stdin.on("data", c => input += c); process.stdin.on("end", () => { const match = input.match(/database_id\s*=\s*"([^"]+)"/); process.stdout.write(match?.[1] ?? ""); });')"
+          fi
+
+          if [ -z "$database_id" ]; then
+            echo "Could not determine database id."
+            exit 1
+          fi
+
+          echo "D1_DATABASE_ID=$database_id"
