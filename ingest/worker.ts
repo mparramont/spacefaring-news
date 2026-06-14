@@ -1,13 +1,15 @@
 import { D1NewsStore } from "./d1-store";
 import { ingestFeeds } from "./ingest";
+import { ingestXPosts } from "./x";
 
 export type Env = {
   NEWS_DB: D1Database;
+  X_BEARER_TOKEN?: string;
 };
 
 export default {
   async scheduled(_controller, env, ctx) {
-    ctx.waitUntil(ingestFeeds(new D1NewsStore(env.NEWS_DB)));
+    ctx.waitUntil(runScheduledIngestion(env));
   },
 
   async fetch(request, env, ctx) {
@@ -31,6 +33,34 @@ export default {
     return json({ ok: false, error: "not found" }, 404);
   },
 } satisfies ExportedHandler<Env>;
+
+async function runScheduledIngestion(env: Env) {
+  const store = new D1NewsStore(env.NEWS_DB);
+  const now = new Date();
+  await ingestFeeds(store, { now });
+
+  if (!env.X_BEARER_TOKEN) {
+    return;
+  }
+
+  const startedAt = now.toISOString();
+  const shouldPollX = await store.startDailyPoll("x-daily", startedAt);
+
+  if (!shouldPollX) {
+    return;
+  }
+
+  try {
+    await ingestXPosts(store, {
+      bearerToken: env.X_BEARER_TOKEN,
+      now,
+    });
+  } catch (error) {
+    console.error("X ingestion failed", error);
+  } finally {
+    await store.finishDailyPoll("x-daily", new Date().toISOString());
+  }
+}
 
 function parseLimit(value: string | null) {
   const parsed = Number(value ?? 50);

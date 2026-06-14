@@ -120,16 +120,50 @@ export class D1NewsStore implements NewsStore {
           (SELECT COUNT(*) FROM news_sources WHERE enabled = 1) AS active_source_count,
           (SELECT COUNT(*) FROM news_items) AS item_count,
           (SELECT COUNT(*) FROM ingestion_runs) AS run_count,
+          (SELECT last_finished_at FROM poll_state WHERE id = 'x-daily') AS latest_x_poll_at,
           (SELECT MAX(fetched_at) FROM news_items) AS latest_fetched_at`,
       )
       .first<{
         active_source_count: number;
         item_count: number;
         run_count: number;
+        latest_x_poll_at: string | null;
         latest_fetched_at: string | null;
       }>();
 
     return result;
+  }
+
+  async startDailyPoll(id: string, now: string) {
+    const currentDate = now.slice(0, 10);
+    const existing = await this.db
+      .prepare("SELECT last_started_at FROM poll_state WHERE id = ?")
+      .bind(id)
+      .first<{ last_started_at: string | null }>();
+
+    if (existing?.last_started_at?.startsWith(currentDate)) {
+      return false;
+    }
+
+    await this.db
+      .prepare(
+        `INSERT INTO poll_state (id, last_started_at, updated_at)
+         VALUES (?, ?, ?)
+         ON CONFLICT(id) DO UPDATE SET
+          last_started_at = excluded.last_started_at,
+          updated_at = excluded.updated_at`,
+      )
+      .bind(id, now, now)
+      .run();
+
+    return true;
+  }
+
+  async finishDailyPoll(id: string, now: string) {
+    await this.db
+      .prepare("UPDATE poll_state SET last_finished_at = ?, updated_at = ? WHERE id = ?")
+      .bind(now, now, id)
+      .run();
   }
 }
 
@@ -137,5 +171,9 @@ function compactRawJson(raw: Record<string, unknown>) {
   return JSON.stringify({
     categories: raw.category ?? raw.categories ?? null,
     enclosure: raw.enclosure ?? null,
+    platform: raw.platform ?? null,
+    username: raw.username ?? null,
+    lang: raw.lang ?? null,
+    public_metrics: raw.public_metrics ?? null,
   });
 }

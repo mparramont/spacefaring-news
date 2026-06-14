@@ -42,3 +42,10 @@ CREATE TABLE IF NOT EXISTS ingestion_runs (
   failed_count INTEGER NOT NULL,
   errors_json TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS poll_state (
+  id TEXT PRIMARY KEY,
+  last_started_at TEXT,
+  last_finished_at TEXT,
+  updated_at TEXT NOT NULL
+);

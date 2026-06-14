@@ -7,7 +7,7 @@ Spacefaring News is a planned news and newsletter site for the spacefaring era, 
 - htmx frontend built with Vite
 - Cloudflare Pages Functions for the edge request adapter
 - Rust backend logic compiled to WebAssembly for newsletter signup fragments
-- Cloudflare Worker cron ingestion for RSS and Atom feeds
+- Cloudflare Worker cron ingestion for RSS, Atom, and daily X polling
 - Cloudflare D1 storage for normalized source and article records
 - Playwright e2e tests against Wrangler's local Pages runtime
 
@@ -16,11 +16,13 @@ Spacefaring News is a planned news and newsletter site for the spacefaring era, 
 The ingestion pipeline is intentionally small:
 
 1. `ingest/sources.ts` keeps the curated RSS/Atom source catalog.
-2. `ingest/worker.ts` runs as `spacefaring-news-ingest` on a 30-minute cron.
-3. `ingest/ingest.ts` fetches each source and normalizes items through `ingest/feed.ts`.
-4. `ingest/d1-store.ts` upserts sources, deduplicates items, and records each run in D1.
+2. `ingest/x-sources.ts` keeps the curated X account catalog.
+3. `ingest/worker.ts` runs as `spacefaring-news-ingest` on a 30-minute cron.
+4. `ingest/ingest.ts` fetches each RSS/Atom source and normalizes items through `ingest/feed.ts`.
+5. `ingest/x.ts` polls X once per UTC day when `X_BEARER_TOKEN` is configured.
+6. `ingest/d1-store.ts` upserts sources, deduplicates items, records runs, and keeps daily poll state in D1.
 
-The D1 schema is in `migrations/0001_news_ingestion.sql`.
+The D1 schema starts in `migrations/0001_news_ingestion.sql`, with incremental migrations in `migrations/`.
 
 Local ingestion setup:
 
@@ -42,11 +44,13 @@ Production setup:
 npx wrangler d1 create spacefaring-news
 # Put the returned database_id into wrangler.ingest.toml.
 npx wrangler d1 migrations apply spacefaring-news --remote --config wrangler.ingest.toml
+npx wrangler secret put X_BEARER_TOKEN --config wrangler.ingest.toml
 npm run ingest:deploy
 ```
 
 The current production D1 database ID is already configured in `wrangler.ingest.toml`.
 Pushes to `main` run the D1 migrations and deploy `spacefaring-news-ingest` after the test job passes.
+X polling is skipped until the `X_BEARER_TOKEN` Worker secret exists.
 
 ## Local Development
 

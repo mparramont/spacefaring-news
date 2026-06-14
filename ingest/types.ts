@@ -20,6 +20,10 @@ export type FeedSource = {
   cadenceMinutes: number;
 };
 
+export type XSource = FeedSource & {
+  username: string;
+};
+
 export type NewsItem = {
   id: string;
   sourceId: string;
