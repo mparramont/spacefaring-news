@@ -108,6 +108,25 @@ export class D1NewsStore implements NewsStore {
       .bind(limit)
       .all();
   }
+
+  async stats() {
+    const result = await this.db
+      .prepare(
+        `SELECT
+          (SELECT COUNT(*) FROM news_sources WHERE enabled = 1) AS active_source_count,
+          (SELECT COUNT(*) FROM news_items) AS item_count,
+          (SELECT COUNT(*) FROM ingestion_runs) AS run_count,
+          (SELECT MAX(fetched_at) FROM news_items) AS latest_fetched_at`,
+      )
+      .first<{
+        active_source_count: number;
+        item_count: number;
+        run_count: number;
+        latest_fetched_at: string | null;
+      }>();
+
+    return result;
+  }
 }
 
 function compactRawJson(raw: Record<string, unknown>) {

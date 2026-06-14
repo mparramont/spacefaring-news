@@ -11,16 +11,21 @@ export default {
     ctx.waitUntil(ingestFeeds(new D1NewsStore(env.NEWS_DB)));
   },
 
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    const store = new D1NewsStore(env.NEWS_DB);
 
     if (request.method === "GET" && url.pathname === "/health") {
       return json({ ok: true });
     }
 
+    if (request.method === "GET" && url.pathname === "/stats") {
+      return json(await store.stats());
+    }
+
     if (request.method === "GET" && url.pathname === "/items") {
       const limit = parseLimit(url.searchParams.get("limit"));
-      const items = await new D1NewsStore(env.NEWS_DB).recentItems(limit);
+      const items = await store.recentItems(limit);
       return json(items);
     }
 
@@ -29,8 +34,8 @@ export default {
         return json({ ok: false, error: "unauthorized" }, 401);
       }
 
-      const run = await ingestFeeds(new D1NewsStore(env.NEWS_DB));
-      return json({ ok: true, run });
+      ctx.waitUntil(ingestFeeds(store));
+      return json({ ok: true, accepted: true }, 202);
     }
 
     return json({ ok: false, error: "not found" }, 404);
