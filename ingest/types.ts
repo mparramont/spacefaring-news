@@ -15,6 +15,8 @@ export type FeedSource = {
   url: string;
   homepage: string;
   category: SourceCategory;
+  language: string;
+  region: string;
   cadenceMinutes: number;
 };
 
@@ -48,4 +50,3 @@ export type NewsStore = {
   saveItems(items: NewsItem[]): Promise<number>;
   recordRun(run: IngestionRun): Promise<void>;
 };
-

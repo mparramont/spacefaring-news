@@ -40,6 +40,8 @@ test("ingests multiple feeds, stores normalized items, and records failures", as
       url: "https://example.com/rss.xml",
       homepage: "https://example.com/",
       category: "launch",
+      language: "en",
+      region: "global",
       cadenceMinutes: 30,
     },
     {
@@ -48,6 +50,8 @@ test("ingests multiple feeds, stores normalized items, and records failures", as
       url: "https://example.com/atom.xml",
       homepage: "https://example.com/",
       category: "agency",
+      language: "en",
+      region: "global",
       cadenceMinutes: 30,
     },
     {
@@ -56,6 +60,8 @@ test("ingests multiple feeds, stores normalized items, and records failures", as
       url: "https://example.com/bad.xml",
       homepage: "https://example.com/",
       category: "policy",
+      language: "en",
+      region: "global",
       cadenceMinutes: 30,
     },
   ];
@@ -111,4 +117,3 @@ test("ingests multiple feeds, stores normalized items, and records failures", as
   assert.equal(run.errors[0].sourceId, "bad-source");
   assert.equal(store.runs.length, 1);
 });
-

@@ -4,10 +4,15 @@ CREATE TABLE IF NOT EXISTS news_sources (
   url TEXT NOT NULL,
   homepage TEXT NOT NULL,
   category TEXT NOT NULL,
+  language TEXT NOT NULL DEFAULT 'en',
+  region TEXT NOT NULL DEFAULT 'global',
   cadence_minutes INTEGER NOT NULL,
   enabled INTEGER NOT NULL DEFAULT 1,
   updated_at TEXT NOT NULL
 );
+
+CREATE INDEX IF NOT EXISTS idx_news_sources_language ON news_sources(language);
+CREATE INDEX IF NOT EXISTS idx_news_sources_region ON news_sources(region);
 
 CREATE TABLE IF NOT EXISTS news_items (
   id TEXT PRIMARY KEY,
@@ -37,4 +42,3 @@ CREATE TABLE IF NOT EXISTS ingestion_runs (
   failed_count INTEGER NOT NULL,
   errors_json TEXT NOT NULL
 );
-

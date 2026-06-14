@@ -9,6 +9,8 @@ const source: FeedSource = {
   url: "https://example.com/feed.xml",
   homepage: "https://example.com/",
   category: "industry",
+  language: "en",
+  region: "global",
   cadenceMinutes: 30,
 };
 
@@ -64,4 +66,3 @@ test("parses Atom entries with alternate links", () => {
   assert.equal(items[0].author, "Orbit Desk");
   assert.equal(items[0].publishedAt, "2026-06-14T01:30:00.000Z");
 });
-

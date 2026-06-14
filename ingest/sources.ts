@@ -7,6 +7,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.nasa.gov/news-release/feed/",
     homepage: "https://www.nasa.gov/news-release/",
     category: "agency",
+    language: "en",
+    region: "us",
     cadenceMinutes: 30,
   },
   {
@@ -15,6 +17,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.nasa.gov/feed/",
     homepage: "https://www.nasa.gov/news/",
     category: "agency",
+    language: "en",
+    region: "us",
     cadenceMinutes: 30,
   },
   {
@@ -23,6 +27,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.nasa.gov/missions/artemis/feed/",
     homepage: "https://www.nasa.gov/missions/artemis/",
     category: "agency",
+    language: "en",
+    region: "us",
     cadenceMinutes: 30,
   },
   {
@@ -31,6 +37,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.nasa.gov/missions/station/feed/",
     homepage: "https://www.nasa.gov/missions/station/",
     category: "agency",
+    language: "en",
+    region: "us",
     cadenceMinutes: 30,
   },
   {
@@ -39,6 +47,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.nasa.gov/earth/feed/",
     homepage: "https://www.nasa.gov/earth/",
     category: "science",
+    language: "en",
+    region: "us",
     cadenceMinutes: 60,
   },
   {
@@ -47,6 +57,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.nasa.gov/technology/feed/",
     homepage: "https://www.nasa.gov/technology/",
     category: "science",
+    language: "en",
+    region: "us",
     cadenceMinutes: 60,
   },
   {
@@ -55,6 +67,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.nasa.gov/aeronautics/feed/",
     homepage: "https://www.nasa.gov/aeronautics/",
     category: "science",
+    language: "en",
+    region: "us",
     cadenceMinutes: 60,
   },
   {
@@ -63,6 +77,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.nasa.gov/centers-and-facilities/jpl/feed/",
     homepage: "https://www.nasa.gov/centers-and-facilities/jpl/",
     category: "science",
+    language: "en",
+    region: "us",
     cadenceMinutes: 60,
   },
   {
@@ -71,6 +87,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.nasa.gov/centers-and-facilities/kennedy/feed/",
     homepage: "https://www.nasa.gov/centers-and-facilities/kennedy/",
     category: "launch",
+    language: "en",
+    region: "us",
     cadenceMinutes: 60,
   },
   {
@@ -79,6 +97,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.esa.int/rssfeed/TopNews",
     homepage: "https://www.esa.int/",
     category: "agency",
+    language: "en",
+    region: "europe",
     cadenceMinutes: 30,
   },
   {
@@ -87,6 +107,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://spacewatch.global/feed/",
     homepage: "https://spacewatch.global/",
     category: "industry",
+    language: "en",
+    region: "global",
     cadenceMinutes: 60,
   },
   {
@@ -95,6 +117,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://spaceinafrica.com/feed/",
     homepage: "https://spaceinafrica.com/",
     category: "industry",
+    language: "en",
+    region: "africa",
     cadenceMinutes: 60,
   },
   {
@@ -103,6 +127,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://latamsatelital.com/feed/",
     homepage: "https://latamsatelital.com/",
     category: "satellite",
+    language: "es",
+    region: "latam",
     cadenceMinutes: 60,
   },
   {
@@ -111,6 +137,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.geospatialworld.net/feed/",
     homepage: "https://www.geospatialworld.net/",
     category: "satellite",
+    language: "en",
+    region: "global",
     cadenceMinutes: 60,
   },
   {
@@ -119,6 +147,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.indiatoday.in/rss/1206578",
     homepage: "https://www.indiatoday.in/science",
     category: "science",
+    language: "en",
+    region: "india",
     cadenceMinutes: 60,
   },
   {
@@ -127,6 +157,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.thehindu.com/sci-tech/science/feeder/default.rss",
     homepage: "https://www.thehindu.com/sci-tech/science/",
     category: "science",
+    language: "en",
+    region: "india",
     cadenceMinutes: 60,
   },
   {
@@ -135,6 +167,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://timesofindia.indiatimes.com/rssfeeds/5880659.cms",
     homepage: "https://timesofindia.indiatimes.com/science",
     category: "science",
+    language: "en",
+    region: "india",
     cadenceMinutes: 60,
   },
   {
@@ -143,6 +177,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://agnikul.in/feed/",
     homepage: "https://agnikul.in/",
     category: "commercial",
+    language: "en",
+    region: "india",
     cadenceMinutes: 60,
   },
   {
@@ -151,6 +187,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.chinadaily.com.cn/rss/china_rss.xml",
     homepage: "https://www.chinadaily.com.cn/china/scitech",
     category: "science",
+    language: "en",
+    region: "china",
     cadenceMinutes: 60,
   },
   {
@@ -159,6 +197,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.chinadaily.com.cn/rss/world_rss.xml",
     homepage: "https://www.chinadaily.com.cn/world",
     category: "industry",
+    language: "en",
+    region: "china",
     cadenceMinutes: 60,
   },
   {
@@ -167,6 +207,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://spacenews.com/tag/china/feed/",
     homepage: "https://spacenews.com/tag/china/",
     category: "industry",
+    language: "en",
+    region: "china",
     cadenceMinutes: 60,
   },
   {
@@ -175,6 +217,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://spacenews.com/tag/india/feed/",
     homepage: "https://spacenews.com/tag/india/",
     category: "industry",
+    language: "en",
+    region: "india",
     cadenceMinutes: 60,
   },
   {
@@ -183,6 +227,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://spacenews.com/tag/uae/feed/",
     homepage: "https://spacenews.com/tag/uae/",
     category: "industry",
+    language: "en",
+    region: "mena",
     cadenceMinutes: 60,
   },
   {
@@ -191,6 +237,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.mbrsc.ae/feed/",
     homepage: "https://www.mbrsc.ae/",
     category: "agency",
+    language: "en",
+    region: "mena",
     cadenceMinutes: 60,
   },
   {
@@ -199,6 +247,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.arabnews.com/taxonomy/term/1006/feed",
     homepage: "https://www.arabnews.com/space",
     category: "industry",
+    language: "en",
+    region: "mena",
     cadenceMinutes: 60,
   },
   {
@@ -207,6 +257,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.satelliteprome.com/feed/",
     homepage: "https://www.satelliteprome.com/",
     category: "satellite",
+    language: "en",
+    region: "mena",
     cadenceMinutes: 60,
   },
   {
@@ -215,6 +267,118 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://tass.com/rss/v2.xml?sections=space",
     homepage: "https://tass.com/space",
     category: "agency",
+    language: "en",
+    region: "russia",
+    cadenceMinutes: 60,
+  },
+  {
+    id: "eureka-daniel-marin",
+    title: "Eureka / Daniel Marin",
+    url: "https://danielmarin.naukas.com/feed/",
+    homepage: "https://danielmarin.naukas.com/",
+    category: "science",
+    language: "es",
+    region: "spain",
+    cadenceMinutes: 60,
+  },
+  {
+    id: "actualidad-aeroespacial",
+    title: "Actualidad Aeroespacial",
+    url: "https://actualidadaeroespacial.com/feed/",
+    homepage: "https://actualidadaeroespacial.com/",
+    category: "industry",
+    language: "es",
+    region: "spain",
+    cadenceMinutes: 60,
+  },
+  {
+    id: "infoespacial",
+    title: "InfoEspacial",
+    url: "https://www.infoespacial.com/rss/portada.xml",
+    homepage: "https://www.infoespacial.com/",
+    category: "industry",
+    language: "es",
+    region: "spain",
+    cadenceMinutes: 60,
+  },
+  {
+    id: "futura-sciences-espace",
+    title: "Futura Sciences Espace",
+    url: "https://www.futura-sciences.com/rss/espace/actualites.xml",
+    homepage: "https://www.futura-sciences.com/sciences/espace/",
+    category: "science",
+    language: "fr",
+    region: "france",
+    cadenceMinutes: 60,
+  },
+  {
+    id: "raumfahrer-net",
+    title: "Raumfahrer.net",
+    url: "https://www.raumfahrer.net/feed/",
+    homepage: "https://www.raumfahrer.net/",
+    category: "industry",
+    language: "de",
+    region: "germany",
+    cadenceMinutes: 60,
+  },
+  {
+    id: "sorae",
+    title: "Sorae",
+    url: "https://sorae.info/feed",
+    homepage: "https://sorae.info/",
+    category: "science",
+    language: "ja",
+    region: "japan",
+    cadenceMinutes: 60,
+  },
+  {
+    id: "sansa",
+    title: "South African National Space Agency",
+    url: "https://www.sansa.org.za/feed/",
+    homepage: "https://www.sansa.org.za/",
+    category: "agency",
+    language: "en",
+    region: "africa",
+    cadenceMinutes: 60,
+  },
+  {
+    id: "olhar-digital-space",
+    title: "Olhar Digital Ciencia e Espaco",
+    url: "https://olhardigital.com.br/editorias/ciencia-e-espaco/feed/",
+    homepage: "https://olhardigital.com.br/editorias/ciencia-e-espaco/",
+    category: "science",
+    language: "pt",
+    region: "brazil",
+    cadenceMinutes: 60,
+  },
+  {
+    id: "kosmonauta-net",
+    title: "Kosmonauta.net",
+    url: "https://kosmonauta.net/feed/",
+    homepage: "https://kosmonauta.net/",
+    category: "industry",
+    language: "pl",
+    region: "poland",
+    cadenceMinutes: 60,
+  },
+  {
+    id: "polsa",
+    title: "Polish Space Agency",
+    url: "https://polsa.gov.pl/feed/",
+    homepage: "https://polsa.gov.pl/",
+    category: "agency",
+    language: "pl",
+    region: "poland",
+    cadenceMinutes: 60,
+  },
+  {
+    id: "israel-space-agency",
+    title: "Israel Space Agency",
+    url: "https://www.space.gov.il/en/rss.xml",
+    homepage: "https://www.space.gov.il/en",
+    category: "agency",
+    language: "en",
+    region: "israel",
     cadenceMinutes: 60,
   },
   {
@@ -223,6 +387,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://spacenews.com/feed/",
     homepage: "https://spacenews.com/",
     category: "industry",
+    language: "en",
+    region: "us",
     cadenceMinutes: 30,
   },
   {
@@ -231,6 +397,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://spaceflightnow.com/feed/",
     homepage: "https://spaceflightnow.com/",
     category: "launch",
+    language: "en",
+    region: "us",
     cadenceMinutes: 30,
   },
   {
@@ -239,6 +407,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.space.com/feeds.xml",
     homepage: "https://www.space.com/",
     category: "industry",
+    language: "en",
+    region: "us",
     cadenceMinutes: 30,
   },
   {
@@ -247,6 +417,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.universetoday.com/feed/",
     homepage: "https://www.universetoday.com/",
     category: "astronomy",
+    language: "en",
+    region: "global",
     cadenceMinutes: 60,
   },
   {
@@ -255,6 +427,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.planetary.org/rss/articles",
     homepage: "https://www.planetary.org/articles",
     category: "science",
+    language: "en",
+    region: "us",
     cadenceMinutes: 60,
   },
   {
@@ -263,6 +437,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://spacepolicyonline.com/feed/",
     homepage: "https://spacepolicyonline.com/",
     category: "policy",
+    language: "en",
+    region: "us",
     cadenceMinutes: 30,
   },
   {
@@ -271,6 +447,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://nasawatch.com/feed/",
     homepage: "https://nasawatch.com/",
     category: "policy",
+    language: "en",
+    region: "us",
     cadenceMinutes: 60,
   },
   {
@@ -279,6 +457,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://phys.org/rss-feed/space-news/",
     homepage: "https://phys.org/space-news/",
     category: "science",
+    language: "en",
+    region: "global",
     cadenceMinutes: 60,
   },
   {
@@ -287,6 +467,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.sciencedaily.com/rss/space_time.xml",
     homepage: "https://www.sciencedaily.com/news/space_time/",
     category: "science",
+    language: "en",
+    region: "global",
     cadenceMinutes: 60,
   },
   {
@@ -295,6 +477,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://earthsky.org/feed/",
     homepage: "https://earthsky.org/",
     category: "astronomy",
+    language: "en",
+    region: "us",
     cadenceMinutes: 60,
   },
   {
@@ -303,6 +487,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.astronomy.com/feed/",
     homepage: "https://www.astronomy.com/",
     category: "astronomy",
+    language: "en",
+    region: "us",
     cadenceMinutes: 60,
   },
   {
@@ -311,6 +497,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://astronomynow.com/feed/",
     homepage: "https://astronomynow.com/",
     category: "astronomy",
+    language: "en",
+    region: "global",
     cadenceMinutes: 60,
   },
   {
@@ -319,6 +507,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://spaceq.ca/feed/",
     homepage: "https://spaceq.ca/",
     category: "industry",
+    language: "en",
+    region: "canada",
     cadenceMinutes: 60,
   },
   {
@@ -327,6 +517,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://spaceexplored.com/feed/",
     homepage: "https://spaceexplored.com/",
     category: "commercial",
+    language: "en",
+    region: "us",
     cadenceMinutes: 60,
   },
   {
@@ -335,6 +527,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://news.satnews.com/feed/",
     homepage: "https://news.satnews.com/",
     category: "satellite",
+    language: "en",
+    region: "us",
     cadenceMinutes: 60,
   },
   {
@@ -343,6 +537,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://payloadspace.com/feed/",
     homepage: "https://payloadspace.com/",
     category: "commercial",
+    language: "en",
+    region: "us",
     cadenceMinutes: 30,
   },
   {
@@ -351,6 +547,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://europeanspaceflight.com/feed/",
     homepage: "https://europeanspaceflight.com/",
     category: "launch",
+    language: "en",
+    region: "europe",
     cadenceMinutes: 60,
   },
   {
@@ -359,6 +557,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.rocketlabusa.com/updates/rss/",
     homepage: "https://www.rocketlabusa.com/updates/",
     category: "commercial",
+    language: "en",
+    region: "new-zealand",
     cadenceMinutes: 60,
   },
   {
@@ -367,6 +567,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://fireflyspace.com/feed/",
     homepage: "https://fireflyspace.com/news/",
     category: "commercial",
+    language: "en",
+    region: "us",
     cadenceMinutes: 60,
   },
   {
@@ -375,6 +577,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.spaceforce.mil/DesktopModules/ArticleCS/RSS.ashx?ContentType=1&Site=1060&Category=9976&max=20",
     homepage: "https://www.spaceforce.mil/News/",
     category: "defense",
+    language: "en",
+    region: "us",
     cadenceMinutes: 60,
   },
   {
@@ -383,6 +587,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.vandenberg.spaceforce.mil/DesktopModules/ArticleCS/RSS.ashx?ContentType=1&Site=1028&Category=12341&max=20",
     homepage: "https://www.vandenberg.spaceforce.mil/News/Launches/",
     category: "launch",
+    language: "en",
+    region: "us",
     cadenceMinutes: 60,
   },
   {
@@ -391,6 +597,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.swpc.noaa.gov/rss.xml",
     homepage: "https://www.swpc.noaa.gov/",
     category: "science",
+    language: "en",
+    region: "us",
     cadenceMinutes: 30,
   },
   {
@@ -399,6 +607,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://cnes.fr/en/rss.xml",
     homepage: "https://cnes.fr/en",
     category: "agency",
+    language: "en",
+    region: "france",
     cadenceMinutes: 60,
   },
   {
@@ -407,6 +617,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.gov.uk/search/news-and-communications.atom?organisations%5B%5D=uk-space-agency",
     homepage: "https://www.gov.uk/government/organisations/uk-space-agency",
     category: "agency",
+    language: "en",
+    region: "uk",
     cadenceMinutes: 60,
   },
   {
@@ -415,6 +627,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.spacefoundation.org/feed/",
     homepage: "https://www.spacefoundation.org/",
     category: "industry",
+    language: "en",
+    region: "us",
     cadenceMinutes: 60,
   },
   {
@@ -423,6 +637,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.defensenews.com/arc/outboundfeeds/rss/category/space/?outputType=xml",
     homepage: "https://www.defensenews.com/space/",
     category: "defense",
+    language: "en",
+    region: "us",
     cadenceMinutes: 60,
   },
   {
@@ -431,6 +647,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.c4isrnet.com/arc/outboundfeeds/rss/category/battlefield-tech/space/?outputType=xml",
     homepage: "https://www.c4isrnet.com/battlefield-tech/space/",
     category: "defense",
+    language: "en",
+    region: "us",
     cadenceMinutes: 60,
   },
   {
@@ -439,6 +657,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://aviationweek.com/rss.xml",
     homepage: "https://aviationweek.com/space",
     category: "industry",
+    language: "en",
+    region: "us",
     cadenceMinutes: 60,
   },
   {
@@ -447,6 +667,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.spacedaily.com/spacedaily.xml",
     homepage: "https://www.spacedaily.com/",
     category: "industry",
+    language: "en",
+    region: "global",
     cadenceMinutes: 60,
   },
   {
@@ -455,6 +677,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://www.marsdaily.com/marsdaily.xml",
     homepage: "https://www.marsdaily.com/",
     category: "science",
+    language: "en",
+    region: "global",
     cadenceMinutes: 60,
   },
   {
@@ -463,6 +687,8 @@ export const NEWS_SOURCES: FeedSource[] = [
     url: "https://spaceref.com/feed/",
     homepage: "https://spaceref.com/",
     category: "industry",
+    language: "en",
+    region: "us",
     cadenceMinutes: 60,
   },
 ];

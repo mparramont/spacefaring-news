@@ -11,13 +11,15 @@ export class D1NewsStore implements NewsStore {
       await this.db
         .prepare(
           `INSERT INTO news_sources
-            (id, title, url, homepage, category, cadence_minutes, enabled, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, 1, ?)
+            (id, title, url, homepage, category, language, region, cadence_minutes, enabled, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
            ON CONFLICT(id) DO UPDATE SET
             title = excluded.title,
             url = excluded.url,
             homepage = excluded.homepage,
             category = excluded.category,
+            language = excluded.language,
+            region = excluded.region,
             cadence_minutes = excluded.cadence_minutes,
             enabled = excluded.enabled,
             updated_at = excluded.updated_at`,
@@ -28,6 +30,8 @@ export class D1NewsStore implements NewsStore {
           source.url,
           source.homepage,
           source.category,
+          source.language,
+          source.region,
           source.cadenceMinutes,
           now,
         )
