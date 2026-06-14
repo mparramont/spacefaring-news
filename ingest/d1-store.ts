@@ -1,6 +1,23 @@
 import type { D1Database } from "@cloudflare/workers-types";
 import type { FeedSource, IngestionRun, NewsItem, NewsStore } from "./types";
 
+export type SourceWithLatestRow = {
+  id: string;
+  title: string;
+  url: string;
+  homepage: string;
+  category: string;
+  language: string;
+  region: string;
+  enabled: number;
+  updated_at: string;
+  latest_item_id: string | null;
+  latest_item_title: string | null;
+  latest_item_url: string | null;
+  latest_item_published_at: string | null;
+  latest_item_fetched_at: string | null;
+};
+
 export class D1NewsStore implements NewsStore {
   constructor(private readonly db: D1Database) {}
 
@@ -162,7 +179,7 @@ export class D1NewsStore implements NewsStore {
           sources.language ASC,
           sources.title ASC`,
       )
-      .all();
+      .all<SourceWithLatestRow>();
 
     return result.results ?? [];
   }

@@ -18,16 +18,25 @@
 
         <section class="source-controls" aria-label="Source filters">
           <label for="source-search">Search</label>
-          <input id="source-search" type="search" autocomplete="off" />
+          <input
+            id="source-search"
+            name="q"
+            type="search"
+            autocomplete="off"
+            hx-get="https://spacefaring-news-ingest.mparramont.workers.dev/sources-fragment"
+            hx-trigger="load, input changed delay:250ms from:#source-search"
+            hx-target="#sources-results"
+            hx-include="#source-search"
+            hx-swap="innerHTML"
+          />
         </section>
 
-        <section id="source-summary" class="source-summary" aria-live="polite">
-          Loading sources.
-        </section>
-
-        <section id="source-list" class="source-list" aria-live="polite"></section>
+        <div id="sources-results">
+          <section id="source-summary" class="source-summary" aria-live="polite">Loading sources.</section>
+          <section id="source-list" class="source-list" aria-live="polite"></section>
+        </div>
       </main>
     </div>
-    <script type="module" src="/src/sources.ts"></script>
+    <script src="/htmx.min.js"></script>
   </body>
 </html>

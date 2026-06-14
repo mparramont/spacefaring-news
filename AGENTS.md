@@ -1,5 +1,10 @@
 # Agent Instructions
 
+## Stack
+
+This project is a Rust and htmx codebase. Prefer Rust for application logic,
+rendering, ingestion, and tests. Use htmx for browser interactions.
+
 ## Copy and Voice
 
 Do not write public-facing copy in Miguel's voice.
