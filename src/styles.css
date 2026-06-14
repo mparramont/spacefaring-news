@@ -256,6 +256,81 @@ button:focus-visible {
   color: var(--fg);
 }
 
+.sources-wrap {
+  max-width: 1040px;
+}
+
+.source-controls {
+  display: grid;
+  grid-template-columns: auto minmax(240px, 420px);
+  gap: 12px;
+  align-items: center;
+  margin: 1.5rem 0 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.source-summary {
+  margin: 0 0 1rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.source-list {
+  display: grid;
+  gap: 10px;
+}
+
+.source-card {
+  display: grid;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+  padding: 0.9rem 0;
+}
+
+.source-card-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: baseline;
+}
+
+.source-card h2 {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.source-card a {
+  color: var(--fg);
+}
+
+.source-meta,
+.source-latest,
+.source-detail {
+  margin: 0;
+}
+
+.source-meta,
+.source-detail {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.source-meta {
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.source-latest {
+  font-size: 0.94rem;
+}
+
+.source-detail {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
 @media (max-width: 640px) {
   .wrap {
     padding: 1.25rem 1rem 3rem;
@@ -263,8 +338,18 @@ button:focus-visible {
 
   .signup,
   .preview,
-  .form-row {
+  .form-row,
+  .source-controls,
+  .source-card-header {
     grid-template-columns: 1fr;
+  }
+
+  .source-card-header {
+    gap: 2px;
+  }
+
+  .source-meta {
+    white-space: normal;
   }
 
   button {

@@ -15,3 +15,8 @@ sentence. Include:
 
 Then wait for Miguel to provide the exact copy.
 
+## Deployment
+
+Always deploy completed changes. For this project, push to `main` and verify
+the GitHub Actions deploy jobs complete successfully unless Miguel explicitly
+asks not to deploy.

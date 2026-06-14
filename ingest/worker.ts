@@ -24,6 +24,10 @@ export default {
       return json(await store.stats());
     }
 
+    if (request.method === "GET" && url.pathname === "/sources") {
+      return json(await store.sourcesWithLatest());
+    }
+
     if (request.method === "GET" && url.pathname === "/items") {
       const limit = parseLimit(url.searchParams.get("limit"));
       const items = await store.recentItems(limit);
@@ -73,6 +77,7 @@ function json(body: unknown, status = 200) {
     headers: {
       "content-type": "application/json;charset=UTF-8",
       "cache-control": "no-store",
+      "access-control-allow-origin": "*",
     },
   });
 }

@@ -38,7 +38,14 @@ export class D1NewsStore implements NewsStore {
         .run();
     }
 
-    const existing = await this.db.prepare("SELECT id FROM news_sources").all<{ id: string }>();
+    const hasOnlyXSources = sources.every((source) => source.id.startsWith("x-"));
+    const hasNoXSources = sources.every((source) => !source.id.startsWith("x-"));
+    const existingQuery = hasOnlyXSources
+      ? "SELECT id FROM news_sources WHERE id LIKE 'x-%'"
+      : hasNoXSources
+        ? "SELECT id FROM news_sources WHERE id NOT LIKE 'x-%'"
+        : "SELECT id FROM news_sources";
+    const existing = await this.db.prepare(existingQuery).all<{ id: string }>();
 
     for (const source of existing.results ?? []) {
       if (!activeIds.has(source.id)) {
@@ -110,6 +117,51 @@ export class D1NewsStore implements NewsStore {
          LIMIT ?`,
       )
       .bind(limit)
+      .all();
+  }
+
+  async sourcesWithLatest() {
+    return this.db
+      .prepare(
+        `WITH latest AS (
+          SELECT
+            source_id,
+            id,
+            title,
+            url,
+            published_at,
+            fetched_at,
+            ROW_NUMBER() OVER (
+              PARTITION BY source_id
+              ORDER BY COALESCE(published_at, fetched_at) DESC
+            ) AS position
+          FROM news_items
+        )
+        SELECT
+          sources.id,
+          sources.title,
+          sources.url,
+          sources.homepage,
+          sources.category,
+          sources.language,
+          sources.region,
+          sources.enabled,
+          sources.updated_at,
+          latest.id AS latest_item_id,
+          latest.title AS latest_item_title,
+          latest.url AS latest_item_url,
+          latest.published_at AS latest_item_published_at,
+          latest.fetched_at AS latest_item_fetched_at
+        FROM news_sources AS sources
+        LEFT JOIN latest
+          ON latest.source_id = sources.id
+          AND latest.position = 1
+        WHERE sources.enabled = 1
+        ORDER BY
+          sources.region ASC,
+          sources.language ASC,
+          sources.title ASC`,
+      )
       .all();
   }
 

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <title>Sources - Spacefaring News</title>
+  </head>
+  <body>
+    <div class="wrap sources-wrap">
+      <header class="site">
+        <p><a class="brand" href="/">Spacefaring News</a></p>
+      </header>
+
+      <main>
+        <p class="eyebrow">OPERATIONS</p>
+        <h1>Sources</h1>
+
+        <section class="source-controls" aria-label="Source filters">
+          <label for="source-search">Search</label>
+          <input id="source-search" type="search" autocomplete="off" />
+        </section>
+
+        <section id="source-summary" class="source-summary" aria-live="polite">
+          Loading sources.
+        </section>
+
+        <section id="source-list" class="source-list" aria-live="polite"></section>
+      </main>
+    </div>
+    <script type="module" src="/src/sources.ts"></script>
+  </body>
+</html>
