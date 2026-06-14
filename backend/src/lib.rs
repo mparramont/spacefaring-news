@@ -170,6 +170,7 @@ pub fn render_sources_page(fragment_endpoint: &str) -> String {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex" />
     <meta name="htmx-config" content='{{"selfRequestsOnly":false}}' />
+    <link rel="stylesheet" href="/src/styles.css" />
     <title>Sources - Spacefaring News</title>
   </head>
   <body>

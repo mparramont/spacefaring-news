@@ -1,9 +1,30 @@
 import { expect, test } from "@playwright/test";
 
+async function expectThemeLoaded(page, selector) {
+  const styles = await page.locator(selector).evaluate((element) => {
+    const computed = window.getComputedStyle(element);
+    return {
+      borderBottomWidth: computed.borderBottomWidth,
+      color: computed.color,
+      fontFamily: computed.fontFamily,
+      marginBottom: computed.marginBottom,
+    };
+  });
+
+  expect(styles.fontFamily).toContain("Segoe UI");
+  expect(styles.color).toBe("rgb(17, 17, 17)");
+  expect(styles.borderBottomWidth).toBe("1px");
+  expect(styles.marginBottom).not.toBe("0px");
+
+  const screenshot = await page.screenshot({ fullPage: true });
+  expect(screenshot.length).toBeGreaterThan(10_000);
+}
+
 test("subscribes to the Rust-rendered newsletter signup", async ({ page }) => {
   await page.goto("/");
 
   await expect(page).toHaveTitle("Spacefaring News");
+  await expectThemeLoaded(page, "header.site");
   await expect(page.getByRole("heading", { name: "Spacefaring News" })).toBeVisible();
   await expect(page.getByText("The last frontier, the call of the void")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Board the ship" })).toBeVisible();
@@ -50,6 +71,7 @@ test("shows source catalog with latest item data", async ({ page }) => {
   await page.goto("/sources.html");
 
   await expect(page).toHaveTitle("Sources - Spacefaring News");
+  await expectThemeLoaded(page, "header.site");
   await expect(page.getByRole("heading", { name: "Sources" })).toBeVisible();
   await expect(page.getByText("2 of 2 active sources")).toBeVisible();
   await expect(page.getByRole("link", { name: "NASA News Releases" })).toBeVisible();

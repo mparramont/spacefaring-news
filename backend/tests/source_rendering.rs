@@ -58,6 +58,7 @@ fn renders_sources_page_with_htmx_fragment_loading() {
     let html = render_sources_page("https://example.com/sources-fragment");
 
     assert!(html.contains("<title>Sources - Spacefaring News</title>"));
+    assert!(html.contains(r#"<link rel="stylesheet" href="/src/styles.css" />"#));
     assert!(html.contains("<h1>Sources</h1>"));
     assert!(html.contains("hx-get=\"https://example.com/sources-fragment\""));
     assert!(html.contains("hx-trigger=\"load, input changed delay:250ms from:#source-search\""));
