@@ -34,8 +34,11 @@ export default {
         return json({ ok: false, error: "unauthorized" }, 401);
       }
 
-      ctx.waitUntil(ingestFeeds(store));
-      return json({ ok: true, accepted: true }, 202);
+      const run = await ingestFeeds(store, {
+        maxConcurrency: 12,
+        perSourceTimeoutMs: 10_000,
+      });
+      return json({ ok: true, run });
     }
 
     return json({ ok: false, error: "not found" }, 404);

@@ -76,23 +76,32 @@ function randomId() {
 
 async function fetchSource(fetcher: Fetcher, source: FeedSource, timeoutMs: number) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  let timeout: ReturnType<typeof setTimeout>;
+  const timedOut = new Promise<never>((_, reject) => {
+    timeout = setTimeout(() => {
+      controller.abort();
+      reject(new Error(`Timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
 
   try {
-    const response = await fetcher(source.url, {
-      signal: controller.signal,
-      headers: {
-        accept: "application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.5",
-        "user-agent": "SpacefaringNewsBot/0.1 (+https://spacefaring-news.pages.dev)",
-      },
-    });
+    const response = await Promise.race([
+      fetcher(source.url, {
+        signal: controller.signal,
+        headers: {
+          accept: "application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.5",
+          "user-agent": "SpacefaringNewsBot/0.1 (+https://spacefaring-news.pages.dev)",
+        },
+      }),
+      timedOut,
+    ]);
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
 
-    return await response.text();
+    return await Promise.race([response.text(), timedOut]);
   } finally {
-    clearTimeout(timeout);
+    clearTimeout(timeout!);
   }
 }
