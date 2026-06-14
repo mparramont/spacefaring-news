@@ -1,6 +1,5 @@
-import type { FeedSource } from "./types";
 
-export const NEWS_SOURCES: FeedSource[] = [
+export const NEWS_SOURCES = [
   {
     id: "nasa-news-releases",
     title: "NASA News Releases",

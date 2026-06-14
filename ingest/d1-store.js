@@ -1,27 +1,9 @@
-import type { D1Database } from "@cloudflare/workers-types";
-import type { FeedSource, IngestionRun, NewsItem, NewsStore } from "./types";
+export class D1NewsStore {
+  constructor(db) {
+    this.db = db;
+  }
 
-export type SourceWithLatestRow = {
-  id: string;
-  title: string;
-  url: string;
-  homepage: string;
-  category: string;
-  language: string;
-  region: string;
-  enabled: number;
-  updated_at: string;
-  latest_item_id: string | null;
-  latest_item_title: string | null;
-  latest_item_url: string | null;
-  latest_item_published_at: string | null;
-  latest_item_fetched_at: string | null;
-};
-
-export class D1NewsStore implements NewsStore {
-  constructor(private readonly db: D1Database) {}
-
-  async saveSources(sources: FeedSource[], now: string) {
+  async saveSources(sources, now) {
     const activeIds = new Set(sources.map((source) => source.id));
 
     for (const source of sources) {
@@ -62,7 +44,7 @@ export class D1NewsStore implements NewsStore {
       : hasNoXSources
         ? "SELECT id FROM news_sources WHERE id NOT LIKE 'x-%'"
         : "SELECT id FROM news_sources";
-    const existing = await this.db.prepare(existingQuery).all<{ id: string }>();
+    const existing = await this.db.prepare(existingQuery).all();
 
     for (const source of existing.results ?? []) {
       if (!activeIds.has(source.id)) {
@@ -74,7 +56,7 @@ export class D1NewsStore implements NewsStore {
     }
   }
 
-  async saveItems(items: NewsItem[]) {
+  async saveItems(items) {
     let stored = 0;
 
     for (const item of items) {
@@ -105,7 +87,7 @@ export class D1NewsStore implements NewsStore {
     return stored;
   }
 
-  async recordRun(run: IngestionRun) {
+  async recordRun(run) {
     await this.db
       .prepare(
         `INSERT INTO ingestion_runs
@@ -179,13 +161,13 @@ export class D1NewsStore implements NewsStore {
           sources.language ASC,
           sources.title ASC`,
       )
-      .all<SourceWithLatestRow>();
+      .all();
 
     return result.results ?? [];
   }
 
   async stats() {
-    const result = await this.db
+    return this.db
       .prepare(
         `SELECT
           (SELECT COUNT(*) FROM news_sources WHERE enabled = 1) AS active_source_count,
@@ -194,23 +176,15 @@ export class D1NewsStore implements NewsStore {
           (SELECT last_finished_at FROM poll_state WHERE id = 'x-daily') AS latest_x_poll_at,
           (SELECT MAX(fetched_at) FROM news_items) AS latest_fetched_at`,
       )
-      .first<{
-        active_source_count: number;
-        item_count: number;
-        run_count: number;
-        latest_x_poll_at: string | null;
-        latest_fetched_at: string | null;
-      }>();
-
-    return result;
+      .first();
   }
 
-  async startDailyPoll(id: string, now: string) {
+  async startDailyPoll(id, now) {
     const currentDate = now.slice(0, 10);
     const existing = await this.db
       .prepare("SELECT last_started_at FROM poll_state WHERE id = ?")
       .bind(id)
-      .first<{ last_started_at: string | null }>();
+      .first();
 
     if (existing?.last_started_at?.startsWith(currentDate)) {
       return false;
@@ -230,7 +204,7 @@ export class D1NewsStore implements NewsStore {
     return true;
   }
 
-  async finishDailyPoll(id: string, now: string) {
+  async finishDailyPoll(id, now) {
     await this.db
       .prepare("UPDATE poll_state SET last_finished_at = ?, updated_at = ? WHERE id = ?")
       .bind(now, now, id)
@@ -238,7 +212,7 @@ export class D1NewsStore implements NewsStore {
   }
 }
 
-function compactRawJson(raw: Record<string, unknown>) {
+function compactRawJson(raw) {
   return JSON.stringify({
     categories: raw.category ?? raw.categories ?? null,
     enclosure: raw.enclosure ?? null,

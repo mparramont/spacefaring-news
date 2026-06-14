@@ -1,23 +1,12 @@
-import { parseFeed } from "./feed";
-import { NEWS_SOURCES } from "./sources";
-import type { FeedSource, IngestionRun, NewsItem, NewsStore } from "./types";
+import { parseFeed } from "./feed.js";
+import { NEWS_SOURCES } from "./sources.js";
 
-type Fetcher = typeof fetch;
-
-export type IngestOptions = {
-  fetcher?: Fetcher;
-  now?: Date;
-  sources?: FeedSource[];
-  maxConcurrency?: number;
-  perSourceTimeoutMs?: number;
-};
-
-export async function ingestFeeds(store: NewsStore, options: IngestOptions = {}) {
+export async function ingestFeeds(store, options = {}) {
   const fetcher = options.fetcher ?? fetch;
   const sources = options.sources ?? NEWS_SOURCES;
   const startedAt = (options.now ?? new Date()).toISOString();
-  const errors: IngestionRun["errors"] = [];
-  const allItems: NewsItem[] = [];
+  const errors = [];
+  const allItems = [];
 
   await store.saveSources(sources, startedAt);
 
@@ -35,7 +24,7 @@ export async function ingestFeeds(store: NewsStore, options: IngestOptions = {})
 
   const storedCount = await store.saveItems(allItems);
   const finishedAt = new Date().toISOString();
-  const run: IngestionRun = {
+  const run = {
     id: randomId(),
     startedAt,
     finishedAt,
@@ -51,11 +40,7 @@ export async function ingestFeeds(store: NewsStore, options: IngestOptions = {})
   return run;
 }
 
-async function eachSource(
-  sources: FeedSource[],
-  maxConcurrency: number,
-  work: (source: FeedSource) => Promise<void>,
-) {
+async function eachSource(sources, maxConcurrency, work) {
   let nextIndex = 0;
   const workerCount = Math.min(Math.max(maxConcurrency, 1), sources.length);
 
@@ -74,10 +59,10 @@ function randomId() {
   return globalThis.crypto?.randomUUID?.() ?? `run-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-async function fetchSource(fetcher: Fetcher, source: FeedSource, timeoutMs: number) {
+async function fetchSource(fetcher, source, timeoutMs) {
   const controller = new AbortController();
-  let timeout: ReturnType<typeof setTimeout>;
-  const timedOut = new Promise<never>((_, reject) => {
+  let timeout;
+  const timedOut = new Promise((_, reject) => {
     timeout = setTimeout(() => {
       controller.abort();
       reject(new Error(`Timed out after ${timeoutMs}ms`));
@@ -102,6 +87,6 @@ async function fetchSource(fetcher: Fetcher, source: FeedSource, timeoutMs: numb
 
     return await Promise.race([response.text(), timedOut]);
   } finally {
-    clearTimeout(timeout!);
+    clearTimeout(timeout);
   }
 }

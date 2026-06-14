@@ -1,18 +1,13 @@
-import { D1NewsStore, type SourceWithLatestRow } from "./d1-store";
-import { ingestFeeds } from "./ingest";
-import { ingestXPosts } from "./x";
-
-export type Env = {
-  NEWS_DB: D1Database;
-  X_BEARER_TOKEN?: string;
-};
+import { D1NewsStore } from "./d1-store.js";
+import { ingestFeeds } from "./ingest.js";
+import { ingestXPosts } from "./x.js";
 
 export default {
   async scheduled(_controller, env, ctx) {
     ctx.waitUntil(runScheduledIngestion(env));
   },
 
-  async fetch(request, env, ctx) {
+  async fetch(request, env) {
     const url = new URL(request.url);
     const store = new D1NewsStore(env.NEWS_DB);
 
@@ -41,9 +36,9 @@ export default {
 
     return json({ ok: false, error: "not found" }, 404);
   },
-} satisfies ExportedHandler<Env>;
+};
 
-async function runScheduledIngestion(env: Env) {
+async function runScheduledIngestion(env) {
   const store = new D1NewsStore(env.NEWS_DB);
   const now = new Date();
   await ingestFeeds(store, { now });
@@ -71,12 +66,12 @@ async function runScheduledIngestion(env: Env) {
   }
 }
 
-function parseLimit(value: string | null) {
+function parseLimit(value) {
   const parsed = Number(value ?? 50);
   return Number.isFinite(parsed) ? Math.max(1, Math.min(Math.trunc(parsed), 100)) : 50;
 }
 
-function json(body: unknown, status = 200) {
+function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: {
@@ -87,7 +82,7 @@ function json(body: unknown, status = 200) {
   });
 }
 
-function html(body: string, status = 200) {
+function html(body, status = 200) {
   return new Response(body, {
     status,
     headers: {
@@ -98,7 +93,7 @@ function html(body: string, status = 200) {
   });
 }
 
-function renderSourcesFragment(sources: SourceWithLatestRow[], query: string) {
+function renderSourcesFragment(sources, query) {
   const normalizedQuery = query.trim().toLowerCase();
   const filtered = normalizedQuery
     ? sources.filter((source) =>
@@ -124,7 +119,7 @@ function renderSourcesFragment(sources: SourceWithLatestRow[], query: string) {
   ].join("");
 }
 
-function renderSourceCard(source: SourceWithLatestRow) {
+function renderSourceCard(source) {
   const latestDate = (source.latest_item_published_at ?? source.latest_item_fetched_at ?? "").slice(0, 10);
   const latest =
     source.latest_item_title && source.latest_item_url
@@ -134,7 +129,7 @@ function renderSourceCard(source: SourceWithLatestRow) {
   return `<article class="source-card"><div class="source-card-header"><h2><a href="${escapeAttr(source.homepage)}" rel="noopener noreferrer">${escapeHtml(source.title)}</a></h2><p class="source-meta">${escapeHtml(source.region)} / ${escapeHtml(source.language)} / ${escapeHtml(source.category)}</p></div><p class="source-latest">${latest}</p><p class="source-detail">${escapeHtml(source.url)}</p></article>`;
 }
 
-function escapeHtml(value: string) {
+function escapeHtml(value) {
   return value.replace(/[&<>"']/g, (character) => {
     switch (character) {
       case "&":
@@ -153,6 +148,6 @@ function escapeHtml(value: string) {
   });
 }
 
-function escapeAttr(value: string) {
+function escapeAttr(value) {
   return escapeHtml(value);
 }

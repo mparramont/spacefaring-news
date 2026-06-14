@@ -1,6 +1,5 @@
-import type { XSource } from "./types";
 
-export const X_SOURCES: XSource[] = [
+export const X_SOURCES = [
   {
     id: "x-nasa",
     title: "NASA on X",

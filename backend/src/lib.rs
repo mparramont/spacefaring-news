@@ -28,6 +28,48 @@ pub struct NewsItem {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct XSource {
+    pub id: String,
+    pub title: String,
+    pub username: String,
+    pub url: String,
+    pub homepage: String,
+    pub category: String,
+    pub language: String,
+    pub region: String,
+    pub cadence_minutes: u32,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct XPost {
+    pub id: String,
+    pub text: String,
+    pub created_at: Option<String>,
+    pub lang: Option<String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum FeedFetch {
+    Fetched { source_id: String, xml: String },
+    Failed { source_id: String, message: String },
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct IngestionError {
+    pub source_id: String,
+    pub message: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FeedIngestionRun {
+    pub source_count: usize,
+    pub fetched_count: usize,
+    pub failed_count: usize,
+    pub errors: Vec<IngestionError>,
+    pub items: Vec<NewsItem>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SourceView {
     pub id: String,
     pub title: String,
@@ -190,6 +232,76 @@ pub fn parse_feed(
         .collect();
 
     Ok(items)
+}
+
+pub fn ingest_feed_documents(
+    sources: &[FeedSource],
+    documents: &[FeedFetch],
+    fetched_at: &str,
+) -> FeedIngestionRun {
+    let mut items = Vec::new();
+    let mut errors = Vec::new();
+
+    for document in documents {
+        match document {
+            FeedFetch::Fetched { source_id, xml } => {
+                if let Some(source) = sources.iter().find(|source| source.id == *source_id) {
+                    match parse_feed(xml, source, fetched_at) {
+                        Ok(parsed_items) => items.extend(parsed_items),
+                        Err(error) => errors.push(IngestionError {
+                            source_id: source_id.clone(),
+                            message: error,
+                        }),
+                    }
+                } else {
+                    errors.push(IngestionError {
+                        source_id: source_id.clone(),
+                        message: "Unknown source".to_string(),
+                    });
+                }
+            }
+            FeedFetch::Failed { source_id, message } => errors.push(IngestionError {
+                source_id: source_id.clone(),
+                message: message.clone(),
+            }),
+        }
+    }
+
+    FeedIngestionRun {
+        source_count: sources.len(),
+        fetched_count: items.len(),
+        failed_count: errors.len(),
+        errors,
+        items,
+    }
+}
+
+pub fn post_to_news_item(post: &XPost, source: &XSource, fetched_at: &str) -> NewsItem {
+    NewsItem {
+        id: format!("x:{}", post.id),
+        source_id: source.id.clone(),
+        source_title: source.title.clone(),
+        title: first_line(&post.text),
+        url: format!("https://x.com/{}/status/{}", source.username, post.id),
+        summary: Some(post.text.clone()),
+        author: Some(source.title.clone()),
+        published_at: post
+            .created_at
+            .as_deref()
+            .and_then(normalize_date),
+        fetched_at: fetched_at.to_string(),
+        guid: Some(post.id.clone()),
+    }
+}
+
+fn first_line(value: &str) -> String {
+    let normalized = value.split_whitespace().collect::<Vec<_>>().join(" ");
+
+    if normalized.len() > 120 {
+        format!("{}...", &normalized[..117])
+    } else {
+        normalized
+    }
 }
 
 fn normalize_prefixed_tags(xml: &str) -> String {

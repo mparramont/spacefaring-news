@@ -1,5 +1,4 @@
 import { XMLParser } from "fast-xml-parser";
-import type { FeedSource, NewsItem } from "./types";
 
 const parser = new XMLParser({
   ignoreAttributes: false,
@@ -9,31 +8,27 @@ const parser = new XMLParser({
   trimValues: true,
 });
 
-export function parseFeed(xml: string, source: FeedSource, fetchedAt: string): NewsItem[] {
-  const parsed = parser.parse(xml) as Record<string, unknown>;
+export function parseFeed(xml, source, fetchedAt) {
+  const parsed = parser.parse(xml);
   const rawItems = getRssItems(parsed).concat(getAtomEntries(parsed));
 
   return rawItems
     .map((raw) => normalizeItem(raw, source, fetchedAt))
-    .filter((item): item is NewsItem => item !== null);
+    .filter((item) => item !== null);
 }
 
-function getRssItems(parsed: Record<string, unknown>) {
+function getRssItems(parsed) {
   const rss = objectAt(parsed, "rss");
   const channel = objectAt(rss, "channel") ?? objectAt(parsed, "channel");
   return asArray(unknownAt(channel, "item")).filter(isRecord);
 }
 
-function getAtomEntries(parsed: Record<string, unknown>) {
+function getAtomEntries(parsed) {
   const feed = objectAt(parsed, "feed");
   return asArray(unknownAt(feed, "entry")).filter(isRecord);
 }
 
-function normalizeItem(
-  raw: Record<string, unknown>,
-  source: FeedSource,
-  fetchedAt: string,
-): NewsItem | null {
+function normalizeItem(raw, source, fetchedAt) {
   const title = cleanText(firstString(raw.title));
   const url = normalizeUrl(firstString(raw.link) ?? linkFromAtom(raw.link));
   const guid = cleanText(firstString(raw.guid) ?? firstString(raw.id));
@@ -77,16 +72,16 @@ function normalizeItem(
   };
 }
 
-function truncate(value: string | null, maxLength: number) {
+function truncate(value, maxLength) {
   if (!value || value.length <= maxLength) return value;
   return value.slice(0, maxLength).trimEnd();
 }
 
-function stableItemId(sourceId: string, identity: string, title: string) {
+function stableItemId(sourceId, identity, title) {
   return `${sourceId}:${fnv1a(`${identity}|${title}`).toString(16)}`;
 }
 
-function fnv1a(value: string) {
+function fnv1a(value) {
   let hash = 0x811c9dc5;
   for (let index = 0; index < value.length; index += 1) {
     hash ^= value.charCodeAt(index);
@@ -95,7 +90,7 @@ function fnv1a(value: string) {
   return hash >>> 0;
 }
 
-function normalizeUrl(value: string | null) {
+function normalizeUrl(value) {
   if (!value) return null;
   try {
     return new URL(value).toString();
@@ -104,32 +99,34 @@ function normalizeUrl(value: string | null) {
   }
 }
 
-function normalizeDate(value: string | null) {
+function normalizeDate(value) {
   if (!value) return null;
   const time = Date.parse(value);
   return Number.isNaN(time) ? null : new Date(time).toISOString();
 }
 
-function cleanText(value: string | null) {
+function cleanText(value) {
   if (!value) return null;
-  return value
-    .replace(/<[^>]*>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim() || null;
+  return (
+    value
+      .replace(/<[^>]*>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim() || null
+  );
 }
 
-function linkFromAtom(value: unknown) {
+function linkFromAtom(value) {
   const links = asArray(value).filter(isRecord);
   const alternate = links.find((link) => link["@_rel"] === "alternate") ?? links[0];
   return firstString(alternate?.["@_href"]);
 }
 
-function authorName(value: unknown) {
+function authorName(value) {
   if (!isRecord(value)) return null;
   return firstString(value.name);
 }
 
-function firstString(value: unknown): string | null {
+function firstString(value) {
   if (typeof value === "string" || typeof value === "number") {
     return String(value);
   }
@@ -148,20 +145,20 @@ function firstString(value: unknown): string | null {
   return null;
 }
 
-function objectAt(record: unknown, key: string) {
+function objectAt(record, key) {
   const value = unknownAt(record, key);
   return isRecord(value) ? value : null;
 }
 
-function unknownAt(record: unknown, key: string) {
+function unknownAt(record, key) {
   return isRecord(record) ? record[key] : undefined;
 }
 
-function asArray(value: unknown) {
+function asArray(value) {
   if (value === undefined || value === null) return [];
   return Array.isArray(value) ? value : [value];
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value) {
   return typeof value === "object" && value !== null;
 }

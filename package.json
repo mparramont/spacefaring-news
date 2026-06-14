@@ -6,16 +6,16 @@
   "scripts": {
     "build": "npm run build:wasm && vite build",
     "build:wasm": "cargo build --manifest-path backend/Cargo.toml --release --target wasm32-unknown-unknown && mkdir -p pkg && cp backend/target/wasm32-unknown-unknown/release/spacefaring_news_backend.wasm pkg/backend.wasm",
-    "check:sources": "tsx scripts/check-news-sources.ts",
+    "check:sources": "node scripts/check-news-sources.js",
     "dev": "npm run build:wasm && vite --host 127.0.0.1",
     "ingest:deploy": "wrangler deploy --config wrangler.ingest.toml",
     "ingest:dev": "wrangler dev --config wrangler.ingest.toml --test-scheduled",
     "ingest:migrate:local": "wrangler d1 migrations apply spacefaring-news --local --config wrangler.ingest.toml",
-    "test:ingest": "node --import tsx --test tests/ingest/*.test.ts",
+    "test:ingest": "cargo test --manifest-path backend/Cargo.toml --test feed_parsing --test ingestion",
     "preview:pages": "npm run build && wrangler pages dev dist --port 8788 --compatibility-date=2026-06-10",
     "test:e2e": "playwright test",
     "test:e2e:live": "E2E_BASE_URL=https://spacefaring-news.pages.dev playwright test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "node scripts/check-no-typescript.js"
   },
   "dependencies": {
     "fast-xml-parser": "5.8.0",

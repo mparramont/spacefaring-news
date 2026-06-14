@@ -1,44 +1,11 @@
-import { X_SOURCES } from "./x-sources";
-import type { IngestionRun, NewsItem, NewsStore, XSource } from "./types";
+import { X_SOURCES } from "./x-sources.js";
 
-type Fetcher = typeof fetch;
-
-type XUser = {
-  id: string;
-  username: string;
-  name: string;
-};
-
-type XPost = {
-  id: string;
-  text: string;
-  created_at?: string;
-  lang?: string;
-  public_metrics?: {
-    retweet_count?: number;
-    reply_count?: number;
-    like_count?: number;
-    quote_count?: number;
-    bookmark_count?: number;
-    impression_count?: number;
-  };
-};
-
-export type IngestXOptions = {
-  bearerToken: string;
-  fetcher?: Fetcher;
-  now?: Date;
-  sources?: XSource[];
-  maxPostsPerSource?: number;
-  lookbackHours?: number;
-};
-
-export async function ingestXPosts(store: NewsStore, options: IngestXOptions) {
+export async function ingestXPosts(store, options) {
   const fetcher = options.fetcher ?? fetch;
   const sources = options.sources ?? X_SOURCES;
   const startedAt = (options.now ?? new Date()).toISOString();
-  const errors: IngestionRun["errors"] = [];
-  const allItems: NewsItem[] = [];
+  const errors = [];
+  const allItems = [];
 
   await store.saveSources(sources, startedAt);
 
@@ -71,7 +38,7 @@ export async function ingestXPosts(store: NewsStore, options: IngestXOptions) {
 
   const storedCount = await store.saveItems(allItems);
   const finishedAt = new Date().toISOString();
-  const run: IngestionRun = {
+  const run = {
     id: randomId("x-run"),
     startedAt,
     finishedAt,
@@ -87,33 +54,28 @@ export async function ingestXPosts(store: NewsStore, options: IngestXOptions) {
   return run;
 }
 
-async function lookupUsers(fetcher: Fetcher, bearerToken: string, sources: XSource[]) {
+async function lookupUsers(fetcher, bearerToken, sources) {
   const usernames = [...new Set(sources.map((source) => source.username))];
   const url = new URL("https://api.x.com/2/users/by");
   url.searchParams.set("usernames", usernames.join(","));
   url.searchParams.set("user.fields", "id,name,username");
 
-  const json = await xFetch<{ data?: XUser[] }>(fetcher, bearerToken, url);
+  const json = await xFetch(fetcher, bearerToken, url);
   return new Map((json.data ?? []).map((user) => [user.username.toLowerCase(), user]));
 }
 
-async function fetchUserPosts(
-  fetcher: Fetcher,
-  bearerToken: string,
-  userId: string,
-  options: { maxResults: number; startTime: string },
-) {
+async function fetchUserPosts(fetcher, bearerToken, userId, options) {
   const url = new URL(`https://api.x.com/2/users/${userId}/tweets`);
   url.searchParams.set("exclude", "retweets,replies");
   url.searchParams.set("max_results", String(Math.max(5, Math.min(options.maxResults, 100))));
   url.searchParams.set("start_time", options.startTime);
   url.searchParams.set("tweet.fields", "created_at,lang,public_metrics");
 
-  const json = await xFetch<{ data?: XPost[] }>(fetcher, bearerToken, url);
+  const json = await xFetch(fetcher, bearerToken, url);
   return json.data ?? [];
 }
 
-async function xFetch<T>(fetcher: Fetcher, bearerToken: string, url: URL) {
+async function xFetch(fetcher, bearerToken, url) {
   const response = await fetcher(url, {
     headers: {
       accept: "application/json",
@@ -126,10 +88,10 @@ async function xFetch<T>(fetcher: Fetcher, bearerToken: string, url: URL) {
     throw new Error(`X API ${response.status}: ${await response.text()}`);
   }
 
-  return (await response.json()) as T;
+  return response.json();
 }
 
-function postToNewsItem(post: XPost, source: XSource, fetchedAt: string): NewsItem {
+function postToNewsItem(post, source, fetchedAt) {
   return {
     id: `x:${post.id}`,
     sourceId: source.id,
@@ -150,11 +112,11 @@ function postToNewsItem(post: XPost, source: XSource, fetchedAt: string): NewsIt
   };
 }
 
-function firstLine(text: string) {
+function firstLine(text) {
   const line = text.replace(/\s+/g, " ").trim();
   return line.length > 120 ? `${line.slice(0, 117)}...` : line;
 }
 
-function randomId(prefix: string) {
+function randomId(prefix) {
   return globalThis.crypto?.randomUUID?.() ?? `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }

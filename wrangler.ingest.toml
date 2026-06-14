@@ -1,5 +1,5 @@
 name = "spacefaring-news-ingest"
-main = "ingest/worker.ts"
+main = "ingest/worker.js"
 compatibility_date = "2026-06-10"
 
 [triggers]

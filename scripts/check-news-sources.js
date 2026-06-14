@@ -1,4 +1,4 @@
-import { NEWS_SOURCES } from "../ingest/sources";
+import { NEWS_SOURCES } from "../ingest/sources.js";
 
 const timeoutMs = 12_000;
 let failed = 0;
@@ -35,4 +35,3 @@ for (const source of NEWS_SOURCES) {
 if (failed > 0) {
   process.exitCode = 1;
 }
-
