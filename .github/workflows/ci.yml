@@ -2,6 +2,7 @@ name: CI
 
 on:
   pull_request:
+  workflow_dispatch:
   push:
     branches: [main]
 
@@ -83,6 +84,10 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
+      - name: Install Playwright Chromium
+        if: steps.cloudflare.outputs.ready == 'true'
+        run: npx playwright install --with-deps chromium
+
       - name: Ensure Cloudflare Pages project
         if: steps.cloudflare.outputs.ready == 'true'
         run: npx wrangler pages project create spacefaring-news --production-branch main --compatibility-date=2026-06-10 || true
@@ -96,3 +101,7 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Live e2e
+        if: steps.cloudflare.outputs.ready == 'true'
+        run: npm run test:e2e:live

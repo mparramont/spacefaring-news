@@ -9,6 +9,7 @@
     "dev": "npm run build:wasm && vite --host 127.0.0.1",
     "preview:pages": "npm run build && wrangler pages dev dist --port 8788 --compatibility-date=2026-06-10",
     "test:e2e": "playwright test",
+    "test:e2e:live": "E2E_BASE_URL=https://spacefaring-news.pages.dev playwright test",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

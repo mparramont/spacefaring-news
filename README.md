@@ -26,9 +26,15 @@ npm run build
 npm run test:e2e
 ```
 
+Run the same e2e flow against the live Pages URL:
+
+```sh
+npm run test:e2e:live
+```
+
 ## Cloudflare Pages
 
-The Pages project name is `spacefaring-news`. The GitHub Actions deploy job runs on pushes to `main` after the e2e suite passes.
+The Pages project name is `spacefaring-news`. The GitHub Actions deploy job runs on pushes to `main` after the e2e suite passes, then checks the deployed site at `https://spacefaring-news.pages.dev`.
 
 Required repository secrets:
 
