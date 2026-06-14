@@ -2,8 +2,6 @@ import backendModule from "../pkg/backend.wasm";
 
 type BackendExports = {
   memory: WebAssembly.Memory;
-  latest_issue_ptr: () => number;
-  latest_issue_len: () => number;
   subscribe_success_ptr: () => number;
   subscribe_success_len: () => number;
   subscribe_invalid_ptr: () => number;
@@ -26,12 +24,6 @@ function readFragment(exports: BackendExports, ptr: number, len: number) {
   return new TextDecoder().decode(bytes);
 }
 
-export async function renderLatestIssue() {
-  const backend = await getBackend();
-
-  return readFragment(backend, backend.latest_issue_ptr(), backend.latest_issue_len());
-}
-
 export async function renderSubscribeSuccess() {
   const backend = await getBackend();
 
@@ -51,4 +43,3 @@ export async function renderSubscribeInvalid() {
     backend.subscribe_invalid_len(),
   );
 }
-
