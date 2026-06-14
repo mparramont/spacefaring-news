@@ -46,6 +46,9 @@ npm run ingest:deploy
 npx wrangler secret put INGEST_SHARED_SECRET --config wrangler.ingest.toml
 ```
 
+The current production D1 database ID is already configured in `wrangler.ingest.toml`.
+Pushes to `main` run the D1 migrations and deploy `spacefaring-news-ingest` after the test job passes.
+
 ## Local Development
 
 ```sh
