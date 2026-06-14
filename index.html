@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Spacefaring News tracks the people, missions, markets, and technologies expanding life beyond Earth."
+    />
+    <title>Spacefaring News</title>
+  </head>
+  <body>
+    <main class="shell">
+      <p class="eyebrow">SPACEFARING</p>
+      <h1>Spacefaring News</h1>
+      <p class="lede">Today in Spacefaring News, the first signal is live.</p>
+
+      <section class="briefing" aria-labelledby="briefing-title">
+        <div>
+          <h2 id="briefing-title">Morning launch window</h2>
+          <p>
+            A tiny htmx-powered briefing, rendered by Rust on the backend and
+            served from Cloudflare Pages.
+          </p>
+        </div>
+        <button
+          type="button"
+          hx-get="/api/hello"
+          hx-target="#latest-brief"
+          hx-swap="innerHTML"
+        >
+          Load briefing
+        </button>
+      </section>
+
+      <section id="latest-brief" class="latest-brief" aria-live="polite">
+        <p>Awaiting first transmission from @spacefaringnews.</p>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
+

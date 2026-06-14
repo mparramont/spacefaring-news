@@ -1,0 +1,25 @@
+{
+  "name": "spacefaring-news",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "npm run build:wasm && vite build",
+    "build:wasm": "cargo build --manifest-path backend/Cargo.toml --release --target wasm32-unknown-unknown && mkdir -p pkg && cp backend/target/wasm32-unknown-unknown/release/spacefaring_news_backend.wasm pkg/backend.wasm",
+    "dev": "npm run build:wasm && vite --host 127.0.0.1",
+    "preview:pages": "npm run build && wrangler pages dev dist --port 8788 --compatibility-date=2026-06-10",
+    "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "htmx.org": "^2.0.8"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "4.20260606.1",
+    "@playwright/test": "^1.56.0",
+    "@types/node": "^24.10.1",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.0",
+    "wrangler": "^4.53.0"
+  }
+}
