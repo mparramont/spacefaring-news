@@ -43,7 +43,6 @@ npx wrangler d1 create spacefaring-news
 # Put the returned database_id into wrangler.ingest.toml.
 npx wrangler d1 migrations apply spacefaring-news --remote --config wrangler.ingest.toml
 npm run ingest:deploy
-npx wrangler secret put INGEST_SHARED_SECRET --config wrangler.ingest.toml
 ```
 
 The current production D1 database ID is already configured in `wrangler.ingest.toml`.

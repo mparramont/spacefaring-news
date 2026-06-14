@@ -3,7 +3,6 @@ import { ingestFeeds } from "./ingest";
 
 export type Env = {
   NEWS_DB: D1Database;
-  INGEST_SHARED_SECRET?: string;
 };
 
 export default {
@@ -29,26 +28,9 @@ export default {
       return json(items);
     }
 
-    if (request.method === "POST" && url.pathname === "/ingest") {
-      if (!isAuthorized(request, env)) {
-        return json({ ok: false, error: "unauthorized" }, 401);
-      }
-
-      const run = await ingestFeeds(store, {
-        maxConcurrency: 12,
-        perSourceTimeoutMs: 10_000,
-      });
-      return json({ ok: true, run });
-    }
-
     return json({ ok: false, error: "not found" }, 404);
   },
 } satisfies ExportedHandler<Env>;
-
-function isAuthorized(request: Request, env: Env) {
-  if (!env.INGEST_SHARED_SECRET) return false;
-  return request.headers.get("authorization") === `Bearer ${env.INGEST_SHARED_SECRET}`;
-}
 
 function parseLimit(value: string | null) {
   const parsed = Number(value ?? 50);
