@@ -1,0 +1,12 @@
+name = "spacefaring-news-ingest"
+main = "ingest/worker.ts"
+compatibility_date = "2026-06-10"
+
+[triggers]
+crons = ["*/30 * * * *"]
+
+[[d1_databases]]
+binding = "NEWS_DB"
+database_name = "spacefaring-news"
+database_id = "replace-with-cloudflare-d1-database-id"
+

@@ -37,8 +37,14 @@ jobs:
       - name: Rust tests
         run: cargo test --manifest-path backend/Cargo.toml
 
+      - name: Ingestion tests
+        run: npm run test:ingest
+
       - name: Build
         run: npm run build
+
+      - name: Worker dry-run
+        run: npx wrangler deploy --config wrangler.ingest.toml --dry-run --outdir .wrangler-dry-run
 
       - name: E2E
         run: npm run test:e2e

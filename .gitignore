@@ -4,5 +4,6 @@ pkg/
 target/
 **/target/
 .wrangler/
+.wrangler-dry-run/
 playwright-report/
 test-results/

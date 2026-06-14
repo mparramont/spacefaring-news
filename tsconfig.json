@@ -5,8 +5,15 @@
     "moduleResolution": "Bundler",
     "strict": true,
     "types": ["@cloudflare/workers-types", "vite/client", "node"],
-    "skipLibCheck": true,
-    "allowJs": true
+    "skipLibCheck": true
   },
-  "include": ["src", "functions", "tests", "vite.config.ts", "playwright.config.ts", "pkg"]
+  "include": [
+    "src",
+    "functions",
+    "ingest",
+    "scripts",
+    "tests",
+    "vite.config.ts",
+    "playwright.config.ts"
+  ]
 }

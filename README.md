@@ -6,8 +6,45 @@ Spacefaring News is a planned news and newsletter site for the spacefaring era, 
 
 - htmx frontend built with Vite
 - Cloudflare Pages Functions for the edge request adapter
-- Rust backend logic compiled to WebAssembly for the `/api/hello` fragment
+- Rust backend logic compiled to WebAssembly for newsletter signup fragments
+- Cloudflare Worker cron ingestion for RSS and Atom feeds
+- Cloudflare D1 storage for normalized source and article records
 - Playwright e2e tests against Wrangler's local Pages runtime
+
+## News Ingestion
+
+The ingestion pipeline is intentionally small:
+
+1. `ingest/sources.ts` keeps the curated RSS/Atom source catalog.
+2. `ingest/worker.ts` runs as `spacefaring-news-ingest` on a 30-minute cron.
+3. `ingest/ingest.ts` fetches each source and normalizes items through `ingest/feed.ts`.
+4. `ingest/d1-store.ts` upserts sources, deduplicates items, and records each run in D1.
+
+The D1 schema is in `migrations/0001_news_ingestion.sql`.
+
+Local ingestion setup:
+
+```sh
+npm run ingest:migrate:local
+npm run ingest:dev
+curl "http://127.0.0.1:8787/__scheduled?cron=*/30+*+*+*+*"
+```
+
+Manual source audit:
+
+```sh
+npm run check:sources
+```
+
+Production setup:
+
+```sh
+npx wrangler d1 create spacefaring-news
+# Put the returned database_id into wrangler.ingest.toml.
+npx wrangler d1 migrations apply spacefaring-news --remote --config wrangler.ingest.toml
+npm run ingest:deploy
+npx wrangler secret put INGEST_SHARED_SECRET --config wrangler.ingest.toml
+```
 
 ## Local Development
 
@@ -22,7 +59,9 @@ npm run dev
 ```sh
 npm run typecheck
 cargo test --manifest-path backend/Cargo.toml
+npm run test:ingest
 npm run build
+npx wrangler deploy --config wrangler.ingest.toml --dry-run --outdir .wrangler-dry-run
 npm run test:e2e
 ```
 
