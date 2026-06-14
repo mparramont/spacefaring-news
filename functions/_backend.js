@@ -1,24 +1,14 @@
 import backendModule from "../pkg/backend.wasm";
 
-type BackendExports = {
-  memory: WebAssembly.Memory;
-  subscribe_success_ptr: () => number;
-  subscribe_success_len: () => number;
-  subscribe_invalid_ptr: () => number;
-  subscribe_invalid_len: () => number;
-};
-
-let backendReady: Promise<BackendExports> | undefined;
+let backendReady;
 
 async function getBackend() {
-  backendReady ??= WebAssembly.instantiate(backendModule).then((instance) => {
-    return instance.exports as BackendExports;
-  });
+  backendReady ??= WebAssembly.instantiate(backendModule).then((instance) => instance.exports);
 
   return backendReady;
 }
 
-function readFragment(exports: BackendExports, ptr: number, len: number) {
+function readFragment(exports, ptr, len) {
   const bytes = new Uint8Array(exports.memory.buffer, ptr, len);
 
   return new TextDecoder().decode(bytes);

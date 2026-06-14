@@ -1,10 +1,10 @@
 import { renderSubscribeInvalid, renderSubscribeSuccess } from "../_backend";
 
-function isPlausibleEmail(email: FormDataEntryValue | null) {
+function isPlausibleEmail(email) {
   return typeof email === "string" && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
 }
 
-export const onRequestPost: PagesFunction = async ({ request }) => {
+export const onRequestPost = async ({ request }) => {
   const formData = await request.formData();
   const fragment = isPlausibleEmail(formData.get("email"))
     ? await renderSubscribeSuccess()
@@ -17,4 +17,3 @@ export const onRequestPost: PagesFunction = async ({ request }) => {
     },
   });
 };
-

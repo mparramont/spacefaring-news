@@ -1,4 +1,4 @@
-export const onRequestGet: PagesFunction = async () => {
+export const onRequestGet = async () => {
   return new Response(null, {
     status: 404,
     headers: {
