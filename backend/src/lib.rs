@@ -2,6 +2,32 @@ const SUBSCRIBE_SUCCESS: &[u8] = br#"<div class="notice success blog-card" data-
 const SUBSCRIBE_INVALID: &[u8] = br#"<div class="notice error blog-card" data-testid="signup-error"><strong>Use a valid email address.</strong></div>"#;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FeedSource {
+    pub id: String,
+    pub title: String,
+    pub url: String,
+    pub homepage: String,
+    pub category: String,
+    pub language: String,
+    pub region: String,
+    pub cadence_minutes: u32,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct NewsItem {
+    pub id: String,
+    pub source_id: String,
+    pub source_title: String,
+    pub title: String,
+    pub url: String,
+    pub summary: Option<String>,
+    pub author: Option<String>,
+    pub published_at: Option<String>,
+    pub fetched_at: String,
+    pub guid: Option<String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SourceView {
     pub id: String,
     pub title: String,
@@ -141,6 +167,139 @@ pub fn render_sources_page(fragment_endpoint: &str) -> String {
 "##,
         fragment_endpoint = escape_attr(fragment_endpoint)
     )
+}
+
+pub fn parse_feed(
+    xml: &str,
+    source: &FeedSource,
+    fetched_at: &str,
+) -> Result<Vec<NewsItem>, String> {
+    let normalized_xml = normalize_prefixed_tags(xml);
+    let document = roxmltree::Document::parse(&normalized_xml).map_err(|error| error.to_string())?;
+    let root = document.root_element();
+    let item_tag = if root.tag_name().name() == "feed" {
+        "entry"
+    } else {
+        "item"
+    };
+
+    let items = document
+        .descendants()
+        .filter(|node| node.is_element() && node.tag_name().name() == item_tag)
+        .filter_map(|node| parse_feed_node(node, source, fetched_at, item_tag == "entry"))
+        .collect();
+
+    Ok(items)
+}
+
+fn normalize_prefixed_tags(xml: &str) -> String {
+    xml.replace("<dc:creator", "<creator")
+        .replace("</dc:creator>", "</creator>")
+}
+
+fn parse_feed_node(
+    node: roxmltree::Node,
+    source: &FeedSource,
+    fetched_at: &str,
+    is_atom: bool,
+) -> Option<NewsItem> {
+    let title = child_text(node, "title")?;
+    let url = if is_atom {
+        atom_link(node).or_else(|| child_text(node, "link"))?
+    } else {
+        child_text(node, "link")?
+    };
+    let guid = child_text(node, "guid").or_else(|| child_text(node, "id"));
+    let published_at = child_text(node, "pubDate")
+        .or_else(|| child_text(node, "published"))
+        .or_else(|| child_text(node, "updated"))
+        .and_then(|value| normalize_date(&value));
+    let summary = child_text(node, "description")
+        .or_else(|| child_text(node, "summary"))
+        .map(|value| strip_html(&value))
+        .filter(|value| !value.is_empty());
+    let author = child_text(node, "creator")
+        .or_else(|| child_text(node, "author"))
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty());
+    let stable_id = guid.as_deref().unwrap_or(&url);
+
+    Some(NewsItem {
+        id: format!("{}:{}", source.id, short_hash(stable_id)),
+        source_id: source.id.clone(),
+        source_title: source.title.clone(),
+        title: title.trim().to_string(),
+        url: url.trim().to_string(),
+        summary,
+        author,
+        published_at,
+        fetched_at: fetched_at.to_string(),
+        guid,
+    })
+}
+
+fn child_text(node: roxmltree::Node, tag_name: &str) -> Option<String> {
+    let child = node
+        .children()
+        .find(|child| child.is_element() && child.tag_name().name() == tag_name)?;
+
+    if tag_name == "author" {
+        if let Some(name) = child
+            .children()
+            .find(|nested| nested.is_element() && nested.tag_name().name() == "name")
+            .and_then(|nested| nested.text())
+        {
+            return Some(name.to_string());
+        }
+    }
+
+    child.text().map(|value| value.to_string())
+}
+
+fn atom_link(node: roxmltree::Node) -> Option<String> {
+    node.children()
+        .find(|child| {
+            child.is_element()
+                && child.tag_name().name() == "link"
+                && child.attribute("href").is_some()
+                && child.attribute("rel").unwrap_or("alternate") == "alternate"
+        })
+        .and_then(|child| child.attribute("href"))
+        .map(|value| value.to_string())
+}
+
+fn normalize_date(value: &str) -> Option<String> {
+    chrono::DateTime::parse_from_rfc2822(value)
+        .or_else(|_| chrono::DateTime::parse_from_rfc3339(value))
+        .ok()
+        .map(|date| date.to_utc().format("%Y-%m-%dT%H:%M:%S.000Z").to_string())
+}
+
+fn strip_html(value: &str) -> String {
+    let mut output = String::new();
+    let mut in_tag = false;
+
+    for character in value.chars() {
+        match character {
+            '<' => in_tag = true,
+            '>' => in_tag = false,
+            _ if !in_tag => output.push(character),
+            _ => {}
+        }
+    }
+
+    output.trim().to_string()
+}
+
+fn short_hash(value: &str) -> String {
+    let mut hash: u64 = 0xcbf29ce484222325;
+
+    for byte in value.as_bytes() {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+
+    format!("{hash:016x}")
 }
 
 #[no_mangle]
