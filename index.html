@@ -11,33 +11,67 @@
   </head>
   <body>
     <main class="shell">
-      <p class="eyebrow">SPACEFARING</p>
-      <h1>Spacefaring News</h1>
-      <p class="lede">Today in Spacefaring News, the first signal is live.</p>
+      <header class="masthead">
+        <p class="eyebrow">SPACEFARING</p>
+        <h1>Spacefaring News</h1>
+        <p class="lede">
+          A concise newsletter for the people, missions, markets, and machines
+          expanding life beyond Earth.
+        </p>
+      </header>
 
-      <section class="briefing" aria-labelledby="briefing-title">
+      <section class="signup" aria-labelledby="signup-title">
         <div>
-          <h2 id="briefing-title">Morning launch window</h2>
+          <h2 id="signup-title">Get the dispatch</h2>
           <p>
-            A tiny htmx-powered briefing, rendered by Rust on the backend and
-            served from Cloudflare Pages.
+            Start with the newsletter. Add archives, sponsorships, and deeper
+            databases only when the audience asks for them.
           </p>
+        </div>
+
+        <form
+          hx-post="/api/subscribe"
+          hx-target="#signup-result"
+          hx-swap="innerHTML"
+        >
+          <label for="email">Email address</label>
+          <div class="form-row">
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autocomplete="email"
+              placeholder="you@example.com"
+              required
+            />
+            <button type="submit">Subscribe</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="signup-result" class="result" aria-live="polite">
+        <p>No spam, no firehose. Just the useful signal from @spacefaringnews.</p>
+      </section>
+
+      <section class="preview" aria-labelledby="preview-title">
+        <div>
+          <p class="tagline">Today in Spacefaring News...</p>
+          <h2 id="preview-title">Read the shape before the archive exists</h2>
         </div>
         <button
           type="button"
-          hx-get="/api/hello"
-          hx-target="#latest-brief"
+          hx-get="/api/latest"
+          hx-target="#latest-issue"
           hx-swap="innerHTML"
         >
-          Load briefing
+          Preview latest
         </button>
       </section>
 
-      <section id="latest-brief" class="latest-brief" aria-live="polite">
-        <p>Awaiting first transmission from @spacefaringnews.</p>
+      <section id="latest-issue" class="result" aria-live="polite">
+        <p>The archive can wait. The voice comes first.</p>
       </section>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
-

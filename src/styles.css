@@ -21,6 +21,10 @@ button {
   font: inherit;
 }
 
+input {
+  font: inherit;
+}
+
 .shell {
   width: min(100% - 32px, 880px);
   margin: 0 auto;
@@ -37,7 +41,10 @@ button {
 
 h1,
 h2,
-p {
+h3,
+p,
+strong,
+span {
   overflow-wrap: anywhere;
 }
 
@@ -56,15 +63,17 @@ h1 {
   line-height: 1.55;
 }
 
-.briefing,
-.latest-brief {
+.signup,
+.preview,
+.result {
   border: 1px solid #ccd5c4;
   border-radius: 8px;
   background: #ffffff;
   box-shadow: 0 12px 40px rgb(23 33 28 / 0.08);
 }
 
-.briefing {
+.signup,
+.preview {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 24px;
@@ -72,19 +81,60 @@ h1 {
   padding: 24px;
 }
 
-.briefing h2 {
+.signup {
+  grid-template-columns: minmax(0, 0.85fr) minmax(280px, 1fr);
+}
+
+.preview {
+  margin-top: 28px;
+}
+
+.signup h2,
+.preview h2 {
   margin: 0 0 8px;
   font-size: 1.35rem;
 }
 
-.briefing p,
-.latest-brief p {
+.signup p,
+.preview p,
+.result p {
   margin: 0;
   color: #526257;
   line-height: 1.55;
 }
 
-.briefing button {
+form {
+  display: grid;
+  gap: 8px;
+}
+
+label {
+  color: #40534a;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+input {
+  min-height: 44px;
+  min-width: 0;
+  border: 1px solid #b8c4b0;
+  border-radius: 6px;
+  padding: 0 12px;
+  color: #17211c;
+}
+
+input:focus {
+  outline: 2px solid #3d6f6b;
+  outline-offset: 2px;
+}
+
+button {
   min-height: 44px;
   padding: 0 18px;
   border: 0;
@@ -95,28 +145,56 @@ h1 {
   cursor: pointer;
 }
 
-.briefing button:hover,
-.briefing button:focus-visible {
+button:hover,
+button:focus-visible {
   background: #b93e25;
 }
 
-.latest-brief {
+.result {
   margin-top: 20px;
   padding: 22px 24px;
 }
 
-.brief-card h3 {
+.issue-card h3 {
   margin: 0 0 8px;
   font-size: 1.1rem;
 }
 
-.brief-card p {
+.issue-card p {
   margin: 0 0 12px;
 }
 
-.brief-card small {
+.issue-card small,
+.tagline {
   color: #3d6f6b;
   font-weight: 800;
+}
+
+.tagline {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+}
+
+.notice {
+  display: grid;
+  gap: 4px;
+}
+
+.notice strong {
+  color: #17211c;
+}
+
+.notice span {
+  color: #526257;
+  line-height: 1.55;
+}
+
+.notice.error strong {
+  color: #b93e25;
+}
+
+.notice.success strong {
+  color: #2f6b45;
 }
 
 @media (max-width: 640px) {
@@ -125,12 +203,13 @@ h1 {
     padding: 44px 0;
   }
 
-  .briefing {
+  .signup,
+  .preview,
+  .form-row {
     grid-template-columns: 1fr;
   }
 
-  .briefing button {
+  button {
     width: 100%;
   }
 }
-
