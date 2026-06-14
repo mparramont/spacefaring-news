@@ -87,13 +87,14 @@ function sourceCard(source: SourceRow) {
   sourceLink.href = source.homepage;
   sourceLink.textContent = source.title;
   sourceLink.rel = "noopener noreferrer";
-  title.append(sourceLink);
+  title.appendChild(sourceLink);
 
   const meta = document.createElement("p");
   meta.className = "source-meta";
   meta.textContent = [source.region, source.language, source.category].join(" / ");
 
-  header.append(title, meta);
+  header.appendChild(title);
+  header.appendChild(meta);
 
   const latest = document.createElement("p");
   latest.className = "source-latest";
@@ -103,11 +104,12 @@ function sourceCard(source: SourceRow) {
     latestLink.href = source.latest_item_url;
     latestLink.textContent = source.latest_item_title;
     latestLink.rel = "noopener noreferrer";
-    latest.append("Latest: ", latestLink);
+    latest.appendChild(document.createTextNode("Latest: "));
+    latest.appendChild(latestLink);
 
     const date = formatDate(source.latest_item_published_at ?? source.latest_item_fetched_at);
     if (date) {
-      latest.append(` (${date})`);
+      latest.appendChild(document.createTextNode(` (${date})`));
     }
   } else {
     latest.textContent = "Latest: none stored yet";
@@ -117,7 +119,9 @@ function sourceCard(source: SourceRow) {
   detail.className = "source-detail";
   detail.textContent = source.url;
 
-  article.append(header, latest, detail);
+  article.appendChild(header);
+  article.appendChild(latest);
+  article.appendChild(detail);
   return article;
 }
 
