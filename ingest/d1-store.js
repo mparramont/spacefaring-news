@@ -302,6 +302,63 @@ export class D1NewsStore {
     }));
   }
 
+  async issueDraftCopies(clusterIds) {
+    if (clusterIds.length === 0) return new Map();
+
+    const placeholders = clusterIds.map(() => "?").join(", ");
+    const result = await this.db
+      .prepare(
+        `SELECT
+          cluster_id,
+          run_date,
+          provider,
+          model,
+          headline,
+          why_it_matters,
+          source_context,
+          generated_at,
+          updated_at
+        FROM issue_draft_copies
+        WHERE cluster_id IN (${placeholders})`,
+      )
+      .bind(...clusterIds)
+      .all();
+
+    return new Map((result.results ?? []).map((copy) => [copy.cluster_id, copy]));
+  }
+
+  async saveIssueDraftCopy(copy) {
+    await this.db
+      .prepare(
+        `INSERT INTO issue_draft_copies
+          (cluster_id, run_date, provider, model, headline, why_it_matters, source_context, raw_json, generated_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(cluster_id) DO UPDATE SET
+          run_date = excluded.run_date,
+          provider = excluded.provider,
+          model = excluded.model,
+          headline = excluded.headline,
+          why_it_matters = excluded.why_it_matters,
+          source_context = excluded.source_context,
+          raw_json = excluded.raw_json,
+          generated_at = excluded.generated_at,
+          updated_at = excluded.updated_at`,
+      )
+      .bind(
+        copy.cluster_id,
+        copy.run_date,
+        copy.provider,
+        copy.model,
+        copy.headline,
+        copy.why_it_matters,
+        copy.source_context,
+        JSON.stringify(copy.raw ?? {}),
+        copy.generated_at,
+        copy.updated_at,
+      )
+      .run();
+  }
+
   async modelTrainingClusters(limit = 500) {
     const result = await this.db
       .prepare(

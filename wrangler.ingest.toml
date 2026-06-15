@@ -9,3 +9,6 @@ crons = ["*/30 * * * *"]
 binding = "NEWS_DB"
 database_name = "spacefaring-news"
 database_id = "81b107b9-e3f0-47f4-a976-23a26b10a0c6"
+
+[ai]
+binding = "AI"

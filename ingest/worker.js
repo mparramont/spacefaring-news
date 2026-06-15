@@ -1,4 +1,5 @@
 import { D1NewsStore } from "./d1-store.js";
+import { DRAFT_COPY_MODEL, DRAFT_COPY_PROVIDER, generateDraftCopy } from "./draft-copy.js";
 import { ingestFeeds } from "./ingest.js";
 import { MODEL_NAME, defaultWeights, featureNames, trainEditorialModel, trainingExamplesFromClusters } from "./model.js";
 import { rankDailyStories } from "./ranking.js";
@@ -32,6 +33,14 @@ export default {
 
     if (request.method === "GET" && url.pathname === "/admin/issue-draft") {
       return html(await renderIssueDraftAdmin(store));
+    }
+
+    if (request.method === "POST" && url.pathname === "/admin/issue-draft/generate") {
+      const result = await generateIssueDraftCopies(store, env, new Date());
+      const notice = result.failed
+        ? `${result.generated} draft copies generated. ${result.failed} failed.`
+        : `${result.generated} draft copies generated.`;
+      return html(await renderIssueDraftAdmin(store, { notice }));
     }
 
     if (request.method === "POST" && url.pathname === "/admin/model/train") {
@@ -155,11 +164,42 @@ async function renderEditorialAdmin(store, options = {}) {
   return renderEditorialDocument({ latest, clusters, modelRun, weights, notice: options.notice });
 }
 
-async function renderIssueDraftAdmin(store) {
+async function renderIssueDraftAdmin(store, options = {}) {
   const latest = await latestOrGeneratedRanking(store);
   const clusters = latest ? await store.storyClusters(latest.run_date, 50) : [];
   const selectedClusters = clusters.filter((cluster) => ["approved", "watch"].includes(cluster.status));
-  return renderIssueDraftDocument({ latest, clusters: selectedClusters });
+  const copies = await store.issueDraftCopies(selectedClusters.map((cluster) => cluster.id));
+  return renderIssueDraftDocument({ latest, clusters: selectedClusters, copies, notice: options.notice });
+}
+
+async function generateIssueDraftCopies(store, env, now) {
+  const latest = await latestOrGeneratedRanking(store);
+  const clusters = latest ? await store.storyClusters(latest.run_date, 50) : [];
+  const selectedClusters = clusters.filter((cluster) => ["approved", "watch"].includes(cluster.status));
+  let generated = 0;
+  let failed = 0;
+
+  for (const cluster of selectedClusters) {
+    try {
+      const draftCopy = await generateDraftCopy(cluster, env.AI);
+      await store.saveIssueDraftCopy({
+        cluster_id: cluster.id,
+        run_date: cluster.run_date,
+        provider: DRAFT_COPY_PROVIDER,
+        model: DRAFT_COPY_MODEL,
+        ...draftCopy,
+        raw: draftCopy,
+        generated_at: now.toISOString(),
+        updated_at: now.toISOString(),
+      });
+      generated += 1;
+    } catch (error) {
+      console.error("Issue draft copy generation failed", cluster.id, error);
+      failed += 1;
+    }
+  }
+
+  return { generated, failed };
 }
 
 async function latestOrGeneratedRanking(store) {
@@ -321,7 +361,7 @@ function renderEditorialDocument({ latest, clusters, modelRun, weights, notice }
 </html>`;
 }
 
-function renderIssueDraftDocument({ latest, clusters }) {
+function renderIssueDraftDocument({ latest, clusters, copies, notice }) {
   const runMeta = latest
     ? `${escapeHtml(latest.run_date)} / ${latest.cluster_count} clusters / ${latest.item_count} items / ${escapeHtml(latest.method)}`
     : "No ranking run stored.";
@@ -347,14 +387,18 @@ function renderIssueDraftDocument({ latest, clusters }) {
         <nav class="admin-nav" aria-label="Admin views">
           <a href="/admin/editorial">Editorial queue</a>
         </nav>
+        ${notice ? `<p class="notice">${escapeHtml(notice)}</p>` : ""}
         <section class="admin-panel" aria-label="Draft status">
           <div>
             <p class="run-meta">${runMeta}</p>
             <p class="run-meta">${approvedCount} approved / ${watchCount} watch</p>
           </div>
+          <form method="post" action="/admin/issue-draft/generate">
+            <button type="submit">Generate draft copy</button>
+          </form>
         </section>
         <section class="draft-list" aria-label="Selected stories">
-          ${clusters.length ? clusters.map(renderDraftCluster).join("") : `<p class="empty">No approved or watch stories yet.</p>`}
+          ${clusters.length ? clusters.map((cluster, index) => renderDraftCluster(cluster, index, copies.get(cluster.id))).join("") : `<p class="empty">No approved or watch stories yet.</p>`}
         </section>
       </main>
     </div>
@@ -401,7 +445,7 @@ function renderEditorialCluster(cluster, index) {
   </article>`;
 }
 
-function renderDraftCluster(cluster, index) {
+function renderDraftCluster(cluster, index, copy) {
   const mainSource = mainSourceTitle(cluster);
   const reasons = cluster.score_reasons?.length
     ? `<ul class="reasons">${cluster.score_reasons.map((reason) => `<li>${escapeHtml(reason)}</li>`).join("")}</ul>`
@@ -417,16 +461,35 @@ function renderDraftCluster(cluster, index) {
     ${mainSource ? `<p class="story-source">Main source: ${escapeHtml(mainSource)}</p>` : ""}
     ${cluster.summary ? `<p class="summary">${escapeHtml(cluster.summary)}</p>` : ""}
     ${cluster.editor_note ? `<p class="editor-note"><span>Editor note:</span> ${escapeHtml(cluster.editor_note)}</p>` : ""}
-    <div class="copy-slots" aria-label="Copy slots to fill">
-      <p>Copy slots to fill:</p>
-      <ul>
-        <li>Newsletter headline</li>
-        <li>Why it matters note</li>
-        <li>Source/context note</li>
-      </ul>
-    </div>
+    ${copy ? renderDraftCopy(copy) : renderCopySlots()}
     ${reasons}
   </article>`;
+}
+
+function renderDraftCopy(copy) {
+  return `<div class="copy-slots draft-copy" aria-label="Machine draft copy">
+    <p>Machine draft copy:</p>
+    <dl>
+      <dt>Newsletter headline</dt>
+      <dd>${escapeHtml(copy.headline)}</dd>
+      <dt>Why it matters note</dt>
+      <dd>${escapeHtml(copy.why_it_matters)}</dd>
+      <dt>Source/context note</dt>
+      <dd>${escapeHtml(copy.source_context)}</dd>
+    </dl>
+    <p class="run-meta">${escapeHtml(copy.provider)} / ${escapeHtml(copy.model)} / ${escapeHtml(copy.generated_at)}</p>
+  </div>`;
+}
+
+function renderCopySlots() {
+  return `<div class="copy-slots" aria-label="Copy slots to fill">
+    <p>Copy slots to fill:</p>
+    <ul>
+      <li>Newsletter headline</li>
+      <li>Why it matters note</li>
+      <li>Source/context note</li>
+    </ul>
+  </div>`;
 }
 
 function mainSourceTitle(cluster) {
@@ -757,6 +820,18 @@ button:hover, button:focus-visible {
   padding-left: 1.2rem;
   color: var(--muted);
   font-size: 0.88rem;
+}
+.draft-copy dl {
+  margin: 0.5rem 0 0;
+}
+.draft-copy dt {
+  margin-top: 0.5rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+.draft-copy dd {
+  margin: 0.15rem 0 0;
 }
 .reasons {
   margin: 0.75rem 0 0;
