@@ -1,5 +1,5 @@
 import { D1NewsStore } from "./d1-store.js";
-import { DRAFT_COPY_MODEL, DRAFT_COPY_PROVIDER, generateDraftCopy } from "./draft-copy.js";
+import { DRAFT_COPY_MODEL, DRAFT_COPY_PROVIDER, generateDraftCopy, hasCompleteDraftCopy } from "./draft-copy.js";
 import { ingestFeeds } from "./ingest.js";
 import { MODEL_NAME, defaultWeights, featureNames, trainEditorialModel, trainingExamplesFromClusters } from "./model.js";
 import { rankDailyStories } from "./ranking.js";
@@ -182,7 +182,7 @@ async function generateIssueDraftCopies(store, env, now) {
   let failed = 0;
 
   for (const cluster of selectedClusters) {
-    if (existingCopies.has(cluster.id)) {
+    if (hasCompleteDraftCopy(existingCopies.get(cluster.id))) {
       skipped += 1;
       continue;
     }
@@ -454,6 +454,7 @@ function renderEditorialCluster(cluster, index) {
 
 function renderDraftCluster(cluster, index, copy) {
   const mainSource = mainSourceTitle(cluster);
+  const completeCopy = hasCompleteDraftCopy(copy) ? copy : null;
   const reasons = cluster.score_reasons?.length
     ? `<ul class="reasons">${cluster.score_reasons.map((reason) => `<li>${escapeHtml(reason)}</li>`).join("")}</ul>`
     : "";
@@ -468,7 +469,7 @@ function renderDraftCluster(cluster, index, copy) {
     ${mainSource ? `<p class="story-source">Main source: ${escapeHtml(mainSource)}</p>` : ""}
     ${cluster.summary ? `<p class="summary">${escapeHtml(cluster.summary)}</p>` : ""}
     ${cluster.editor_note ? `<p class="editor-note"><span>Editor note:</span> ${escapeHtml(cluster.editor_note)}</p>` : ""}
-    ${copy ? renderDraftCopy(copy) : renderCopySlots()}
+    ${completeCopy ? renderDraftCopy(completeCopy) : renderCopySlots()}
     ${reasons}
   </article>`;
 }

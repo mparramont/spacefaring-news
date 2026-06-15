@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { draftCopyMessages, generateDraftCopy, normalizeDraftCopy, parseDraftCopyResponse } from "../ingest/draft-copy.js";
+import { draftCopyMessages, generateDraftCopy, hasCompleteDraftCopy, normalizeDraftCopy, parseDraftCopyResponse } from "../ingest/draft-copy.js";
 
 test("builds bounded draft-copy prompts without editorial voice", () => {
   const messages = draftCopyMessages({
@@ -35,6 +35,21 @@ test("parses and normalizes JSON draft-copy responses", () => {
     source_context: "Based on Spaceflight Now coverage.",
   });
 });
+
+test("rejects incomplete draft-copy responses", () => {
+  assert.equal(hasCompleteDraftCopy({ headline: "A", why_it_matters: "B", source_context: "C" }), true);
+  assert.equal(hasCompleteDraftCopy({ headline: "", why_it_matters: "B", source_context: "C" }), false);
+  assert.throws(
+    () =>
+      normalizeDraftCopy({
+        headline: "",
+        why_it_matters: "The mission adds launch context.",
+        source_context: "Based on Spaceflight Now coverage.",
+      }),
+    /missing headline/,
+  );
+});
+
 
 test("retries malformed model output once", async () => {
   const calls = [];

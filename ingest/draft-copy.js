@@ -1,4 +1,4 @@
-export const DRAFT_COPY_MODEL = "@cf/meta/llama-3.2-1b-instruct";
+export const DRAFT_COPY_MODEL = "@cf/meta/llama-3.2-3b-instruct";
 export const DRAFT_COPY_PROVIDER = "cloudflare-workers-ai";
 
 const MAX_FIELD_LENGTH = 220;
@@ -28,7 +28,8 @@ export async function generateDraftCopy(cluster, ai, options = {}) {
         ...draftCopyMessages(cluster),
         {
           role: "user",
-          content: "Return only minified valid JSON. No markdown. No intro. Keys: headline, why_it_matters, source_context.",
+          content:
+            "Return only minified valid JSON. No markdown. No intro. All values must be non-empty strings. Keys: headline, why_it_matters, source_context.",
         },
       ];
     }
@@ -45,7 +46,7 @@ export function draftCopyMessages(cluster) {
         "You draft internal newsletter planning copy for an editor.",
         "Do not imitate a person's voice. Do not add hype.",
         "Be concise, factual, and provisional.",
-        "Return only valid JSON with keys: headline, why_it_matters, source_context.",
+        "Return only valid JSON with non-empty string keys: headline, why_it_matters, source_context.",
       ].join(" "),
     },
     {
@@ -58,9 +59,9 @@ export function draftCopyMessages(cluster) {
         editor_note: cluster.editor_note,
         score_reasons: cluster.score_reasons ?? [],
         constraints: {
-          headline: "one factual line, max 90 characters",
-          why_it_matters: "one sentence, max 180 characters",
-          source_context: "one sentence naming source/context, max 180 characters",
+          headline: "required, one factual line, max 90 characters",
+          why_it_matters: "required, one sentence, max 180 characters",
+          source_context: "required, one sentence naming source/context, max 180 characters",
         },
       }),
     },
@@ -87,10 +88,22 @@ export function parseDraftCopyResponse(value) {
 
 export function normalizeDraftCopy(copy) {
   return {
-    headline: cleanField(copy.headline),
-    why_it_matters: cleanField(copy.why_it_matters),
-    source_context: cleanField(copy.source_context),
+    headline: requiredField("headline", copy.headline),
+    why_it_matters: requiredField("why_it_matters", copy.why_it_matters),
+    source_context: requiredField("source_context", copy.source_context),
   };
+}
+
+export function hasCompleteDraftCopy(copy) {
+  return Boolean(cleanField(copy?.headline) && cleanField(copy?.why_it_matters) && cleanField(copy?.source_context));
+}
+
+function requiredField(name, value) {
+  const cleaned = cleanField(value);
+  if (!cleaned) {
+    throw new Error(`Draft copy is missing ${name}`);
+  }
+  return cleaned;
 }
 
 function cleanField(value) {
