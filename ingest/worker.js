@@ -100,15 +100,25 @@ function parseLimit(value) {
 
 async function runDailyRanking(store, now) {
   const since = new Date(now.getTime() - 36 * 60 * 60 * 1000).toISOString();
-  const items = await store.recentItemsForRanking(since, 300);
-  const ranking = rankDailyStories(items, { now, runDate: now.toISOString().slice(0, 10) });
+  const items = await store.recentItemsForRanking(since, 120);
+  const ranking = rankDailyStories(items, {
+    now,
+    runDate: now.toISOString().slice(0, 10),
+    maxClusters: 30,
+  });
   await store.saveRankingRun(ranking);
   return ranking;
 }
 
 async function renderEditorialAdmin(store, options = {}) {
-  const latest = options.refresh ? await runDailyRanking(store, new Date()) : await latestOrGeneratedRanking(store);
-  const clusters = latest ? await store.storyClusters(latest.run_date, 50) : [];
+  let latest = options.refresh ? await runDailyRanking(store, new Date()) : await latestOrGeneratedRanking(store);
+  let clusters = latest ? await store.storyClusters(latest.run_date, 50) : [];
+
+  if (!options.refresh && latest && clusters.length === 0) {
+    latest = await runDailyRanking(store, new Date());
+    clusters = await store.storyClusters(latest.run_date, 50);
+  }
+
   return renderEditorialDocument({ latest, clusters, notice: options.notice });
 }
 

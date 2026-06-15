@@ -47,6 +47,7 @@ const NON_WESTERN_REGIONS = new Set(["africa", "brazil", "china", "india", "isra
 export function rankDailyStories(items, options = {}) {
   const now = options.now ?? new Date();
   const runDate = options.runDate ?? now.toISOString().slice(0, 10);
+  const maxClusters = options.maxClusters ?? 50;
   const startedAt = now.toISOString();
   const clustersByKey = new Map();
 
@@ -68,7 +69,8 @@ export function rankDailyStories(items, options = {}) {
 
   const clusters = [...clustersByKey.values()]
     .map((cluster) => scoreCluster(cluster, runDate, startedAt))
-    .sort((left, right) => right.importance_score - left.importance_score || left.representative_title.localeCompare(right.representative_title));
+    .sort((left, right) => right.importance_score - left.importance_score || left.representative_title.localeCompare(right.representative_title))
+    .slice(0, maxClusters);
 
   return {
     id: randomId("ranking-run"),
