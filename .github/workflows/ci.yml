@@ -51,7 +51,7 @@ jobs:
 
   deploy:
     name: Deploy to Cloudflare Pages
-    needs: test
+    needs: [test, deploy-ingest]
     runs-on: ubuntu-latest
     if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     permissions:
