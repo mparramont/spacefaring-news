@@ -1,5 +1,6 @@
 import { D1NewsStore } from "./d1-store.js";
 import { ingestFeeds } from "./ingest.js";
+import { MODEL_NAME, defaultWeights, featureNames, trainEditorialModel, trainingExamplesFromClusters } from "./model.js";
 import { rankDailyStories } from "./ranking.js";
 import { ingestXPosts } from "./x.js";
 
@@ -27,6 +28,12 @@ export default {
 
     if (request.method === "GET" && url.pathname === "/admin/editorial") {
       return html(await renderEditorialAdmin(store, { refresh: url.searchParams.get("refresh") === "1" }));
+    }
+
+    if (request.method === "POST" && url.pathname === "/admin/model/train") {
+      await runModelTraining(store, new Date());
+      await runDailyRanking(store, new Date());
+      return html(await renderEditorialAdmin(store, { notice: "Model training completed." }));
     }
 
     if (request.method === "POST" && url.pathname === "/admin/rankings/run") {
@@ -66,6 +73,7 @@ async function runScheduledIngestion(env) {
   const store = new D1NewsStore(env.NEWS_DB);
   const now = new Date();
   await ingestFeeds(store, { now });
+  await runModelTraining(store, now);
 
   if (!env.X_BEARER_TOKEN) {
     await runDailyRanking(store, now);
@@ -101,25 +109,46 @@ function parseLimit(value) {
 async function runDailyRanking(store, now) {
   const since = new Date(now.getTime() - 36 * 60 * 60 * 1000).toISOString();
   const items = await store.recentItemsForRanking(since, 120);
+  const modelWeights = await activeModelWeights(store);
   const ranking = rankDailyStories(items, {
     now,
     runDate: now.toISOString().slice(0, 10),
     maxClusters: 30,
+    modelWeights,
   });
   await store.saveRankingRun(ranking);
   return ranking;
 }
 
+async function activeModelWeights(store) {
+  const weights = await store.latestModelWeights(MODEL_NAME);
+  return Object.keys(weights).length ? { ...defaultWeights(), ...weights } : null;
+}
+
+async function runModelTraining(store, now) {
+  const clusters = await store.modelTrainingClusters(500);
+  const examples = trainingExamplesFromClusters(clusters);
+  const initialWeights = await store.latestModelWeights(MODEL_NAME);
+  const run = trainEditorialModel(examples, {
+    now,
+    initialWeights: Object.keys(initialWeights).length ? initialWeights : defaultWeights(),
+  });
+  await store.saveModelRun(run);
+  return run;
+}
+
 async function renderEditorialAdmin(store, options = {}) {
   let latest = options.refresh ? await runDailyRanking(store, new Date()) : await latestOrGeneratedRanking(store);
   let clusters = latest ? await store.storyClusters(latest.run_date, 50) : [];
+  const modelRun = await store.latestModelRun(MODEL_NAME);
+  const weights = await store.latestModelWeights(MODEL_NAME);
 
   if (!options.refresh && latest && clusters.length === 0) {
     latest = await runDailyRanking(store, new Date());
     clusters = await store.storyClusters(latest.run_date, 50);
   }
 
-  return renderEditorialDocument({ latest, clusters, notice: options.notice });
+  return renderEditorialDocument({ latest, clusters, modelRun, weights, notice: options.notice });
 }
 
 async function latestOrGeneratedRanking(store) {
@@ -228,10 +257,13 @@ function renderSourcesFragment(sources, query) {
   ].join("");
 }
 
-function renderEditorialDocument({ latest, clusters, notice }) {
+function renderEditorialDocument({ latest, clusters, modelRun, weights, notice }) {
   const runMeta = latest
     ? `${escapeHtml(latest.run_date)} / ${latest.cluster_count} clusters / ${latest.item_count} items / ${escapeHtml(latest.method)}`
     : "No ranking run stored.";
+  const modelMeta = modelRun
+    ? `${escapeHtml(modelRun.trained_at)} / ${modelRun.example_count} examples / ${modelRun.positive_count} positives / loss ${modelRun.loss}`
+    : "No model run stored yet.";
   return `<!doctype html>
 <html lang="en">
   <head>
@@ -256,6 +288,16 @@ function renderEditorialDocument({ latest, clusters, notice }) {
             <button type="submit">Run ranking</button>
           </form>
         </section>
+        <section class="admin-panel" aria-label="Learned scoring model">
+          <div>
+            <h2>Learned Scoring</h2>
+            <p class="run-meta">${modelMeta}</p>
+            <p class="run-meta">Model: ${escapeHtml(MODEL_NAME)} / weights: ${Object.keys(weights ?? {}).length || 0} / features: ${featureNames().length}</p>
+          </div>
+          <form method="post" action="/admin/model/train">
+            <button type="submit">Train model</button>
+          </form>
+        </section>
         <section class="cluster-list" aria-label="Story clusters">
           ${clusters.length ? clusters.map(renderEditorialCluster).join("") : `<p class="empty">No story clusters stored.</p>`}
         </section>
@@ -275,7 +317,7 @@ function renderEditorialCluster(cluster, index) {
       <h2><a href="${escapeAttr(cluster.representative_url)}" rel="noopener noreferrer">${escapeHtml(cluster.representative_title)}</a></h2>
       <p class="score">${Math.round(cluster.importance_score * 100)}%</p>
     </div>
-    <p class="cluster-meta">${escapeHtml(cluster.status)} / ${cluster.source_count} source${cluster.source_count === 1 ? "" : "s"} / ${cluster.region_count} region${cluster.region_count === 1 ? "" : "s"} / ${cluster.language_count} language${cluster.language_count === 1 ? "" : "s"}</p>
+    <p class="cluster-meta">${escapeHtml(cluster.status)} / ${cluster.source_count} source${cluster.source_count === 1 ? "" : "s"} / ${cluster.region_count} region${cluster.region_count === 1 ? "" : "s"} / ${cluster.language_count} language${cluster.language_count === 1 ? "" : "s"}${cluster.model_score == null ? "" : ` / model ${Math.round(cluster.model_score * 100)}%`}${cluster.has_spacenews ? " / SpaceNews seed" : ""}</p>
     ${cluster.summary ? `<p class="summary">${escapeHtml(cluster.summary)}</p>` : ""}
     ${reasons}
     <form method="post" action="/admin/story-decision" class="decision-form">

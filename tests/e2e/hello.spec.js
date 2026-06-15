@@ -121,6 +121,8 @@ test("editorial admin shows ranked story controls", async ({ page }) => {
   await expectThemeLoaded(page, "header.site");
   await expect(page.getByRole("heading", { name: "Editorial Queue" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Run ranking" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Train model" })).toBeVisible();
+  await expect(page.getByText("Learned Scoring")).toBeVisible();
   await expect(page.locator(".cluster-card").first()).toBeVisible({ timeout: 10_000 });
   await expect(page.locator(".decision-form").first()).toBeVisible();
   await expect(page.locator("select[name='status']").first()).toBeVisible();

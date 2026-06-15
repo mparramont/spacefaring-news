@@ -190,8 +190,9 @@ export class D1NewsStore {
           `INSERT INTO story_clusters
             (id, run_date, cluster_key, representative_title, representative_url, summary,
              source_count, region_count, language_count, importance_score, score_reasons_json,
-             status, editor_note, selected_position, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             status, editor_note, selected_position, created_at, updated_at,
+             deterministic_score, model_score, has_spacenews, source_titles, primary_region)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
            ON CONFLICT(id) DO UPDATE SET
              representative_title = excluded.representative_title,
              representative_url = excluded.representative_url,
@@ -201,6 +202,11 @@ export class D1NewsStore {
              language_count = excluded.language_count,
              importance_score = excluded.importance_score,
              score_reasons_json = excluded.score_reasons_json,
+             deterministic_score = excluded.deterministic_score,
+             model_score = excluded.model_score,
+             has_spacenews = excluded.has_spacenews,
+             source_titles = excluded.source_titles,
+             primary_region = excluded.primary_region,
              updated_at = excluded.updated_at`,
         )
         .bind(
@@ -220,6 +226,11 @@ export class D1NewsStore {
           existing?.selected_position ?? null,
           existing?.created_at ?? run.started_at,
           run.finished_at,
+          cluster.deterministic_score ?? cluster.importance_score,
+          cluster.model_score ?? null,
+          cluster.has_spacenews ? 1 : 0,
+          cluster.source_titles ?? null,
+          cluster.primary_region ?? null,
         )
         .run();
 
@@ -261,7 +272,12 @@ export class D1NewsStore {
           status,
           editor_note,
           selected_position,
-          updated_at
+          updated_at,
+          deterministic_score,
+          model_score,
+          has_spacenews,
+          source_titles,
+          primary_region
         FROM story_clusters
         WHERE run_date = ?
         ORDER BY
@@ -281,8 +297,130 @@ export class D1NewsStore {
 
     return (result.results ?? []).map((cluster) => ({
       ...cluster,
+      has_spacenews: Boolean(cluster.has_spacenews),
       score_reasons: parseJsonArray(cluster.score_reasons_json),
     }));
+  }
+
+  async modelTrainingClusters(limit = 500) {
+    const result = await this.db
+      .prepare(
+        `SELECT
+          id,
+          representative_title,
+          summary,
+          source_count,
+          region_count,
+          language_count,
+          importance_score,
+          score_reasons_json,
+          status,
+          deterministic_score,
+          model_score,
+          CASE
+            WHEN has_spacenews = 1 THEN 1
+            WHEN EXISTS (
+              SELECT 1
+              FROM story_cluster_items AS links
+              JOIN news_items AS items ON items.id = links.item_id
+              WHERE links.cluster_id = story_clusters.id
+              AND (
+                lower(items.source_title) LIKE '%spacenews%'
+                OR lower(items.url) LIKE '%spacenews.com%'
+              )
+            ) THEN 1
+            ELSE 0
+          END AS has_spacenews,
+          COALESCE(
+            source_titles,
+            (
+              SELECT group_concat(DISTINCT items.source_title)
+              FROM story_cluster_items AS links
+              JOIN news_items AS items ON items.id = links.item_id
+              WHERE links.cluster_id = story_clusters.id
+            )
+          ) AS source_titles,
+          COALESCE(
+            primary_region,
+            (
+              SELECT sources.region
+              FROM story_cluster_items AS links
+              JOIN news_items AS items ON items.id = links.item_id
+              LEFT JOIN news_sources AS sources ON sources.id = items.source_id
+              WHERE links.cluster_id = story_clusters.id
+              LIMIT 1
+            )
+          ) AS primary_region
+        FROM story_clusters
+        ORDER BY updated_at DESC
+        LIMIT ?`,
+      )
+      .bind(limit)
+      .all();
+
+    return (result.results ?? []).map((cluster) => ({
+      ...cluster,
+      has_spacenews: Boolean(cluster.has_spacenews),
+      score_reasons: parseJsonArray(cluster.score_reasons_json),
+    }));
+  }
+
+  async latestModelWeights(modelName) {
+    const result = await this.db
+      .prepare("SELECT feature, weight FROM scoring_model_weights WHERE model_name = ?")
+      .bind(modelName)
+      .all();
+
+    return Object.fromEntries((result.results ?? []).map((row) => [row.feature, row.weight]));
+  }
+
+  async latestModelRun(modelName) {
+    return this.db
+      .prepare(
+        `SELECT id, trained_at, model_name, example_count, positive_count, seed_positive_count,
+          editorial_example_count, loss, notes
+         FROM scoring_model_runs
+         WHERE model_name = ?
+         ORDER BY trained_at DESC
+         LIMIT 1`,
+      )
+      .bind(modelName)
+      .first();
+  }
+
+  async saveModelRun(run) {
+    await this.db
+      .prepare(
+        `INSERT INTO scoring_model_runs
+          (id, trained_at, model_name, example_count, positive_count, seed_positive_count,
+           editorial_example_count, loss, notes)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .bind(
+        run.id,
+        run.trained_at,
+        run.model_name,
+        run.example_count,
+        run.positive_count,
+        run.seed_positive_count,
+        run.editorial_example_count,
+        run.loss,
+        run.notes,
+      )
+      .run();
+
+    for (const [feature, weight] of Object.entries(run.weights)) {
+      await this.db
+        .prepare(
+          `INSERT INTO scoring_model_weights (model_name, feature, weight, updated_at)
+           VALUES (?, ?, ?, ?)
+           ON CONFLICT(model_name, feature) DO UPDATE SET
+            weight = excluded.weight,
+            updated_at = excluded.updated_at`,
+        )
+        .bind(run.model_name, feature, weight, run.trained_at)
+        .run();
+    }
   }
 
   async updateStoryClusterDecision(id, decision, now) {

@@ -1,3 +1,5 @@
+import { scoreClusterWithModel } from "./model.js";
+
 const STOPWORDS = new Set([
   "a",
   "an",
@@ -48,6 +50,7 @@ export function rankDailyStories(items, options = {}) {
   const now = options.now ?? new Date();
   const runDate = options.runDate ?? now.toISOString().slice(0, 10);
   const maxClusters = options.maxClusters ?? 50;
+  const modelWeights = options.modelWeights ?? null;
   const startedAt = now.toISOString();
   const clustersByKey = new Map();
 
@@ -68,7 +71,7 @@ export function rankDailyStories(items, options = {}) {
   }
 
   const clusters = [...clustersByKey.values()]
-    .map((cluster) => scoreCluster(cluster, runDate, startedAt))
+    .map((cluster) => scoreCluster(cluster, runDate, startedAt, modelWeights))
     .sort((left, right) => right.importance_score - left.importance_score || left.representative_title.localeCompare(right.representative_title))
     .slice(0, maxClusters);
 
@@ -79,13 +82,15 @@ export function rankDailyStories(items, options = {}) {
     finished_at: new Date().toISOString(),
     item_count: items.length,
     cluster_count: clusters.length,
-    method: "deterministic-v1",
-    notes: "No external model key required. Ranking uses source diversity, region/language diversity, recency, topic terms, and official-source signals.",
+    method: modelWeights ? "deterministic-v1+editorial-logistic-v1" : "deterministic-v1",
+    notes: modelWeights
+      ? "No external model key required. Ranking blends deterministic signals with a low-cost D1-trained logistic editorial scorer."
+      : "No external model key required. Ranking uses source diversity, region/language diversity, recency, topic terms, and official-source signals.",
     clusters,
   };
 }
 
-function scoreCluster(cluster, runDate, now) {
+function scoreCluster(cluster, runDate, now, modelWeights) {
   const sortedItems = [...cluster.items].sort((left, right) => itemTime(right) - itemTime(left));
   const representative = sortedItems[0];
   const reasons = [];
@@ -137,6 +142,25 @@ function scoreCluster(cluster, runDate, now) {
   }
 
   const importanceScore = Math.min(0.99, Number(score.toFixed(3)));
+  const sourceTitles = [...new Set(sortedItems.map((item) => item.source_title ?? item.sourceTitle).filter(Boolean))];
+  const hasSpacenews = sortedItems.some((item) => {
+    const text = `${item.source_id ?? item.sourceId ?? ""} ${item.source_title ?? item.sourceTitle ?? ""} ${item.url ?? ""}`.toLowerCase();
+    return text.includes("spacenews.com") || text.includes("spacenews");
+  });
+  const preliminary = {
+    representative_title: representative.title,
+    summary: representative.summary ?? null,
+    source_count: sourceCount,
+    region_count: regionCount,
+    language_count: languageCount,
+    importance_score: importanceScore,
+    score_reasons: reasons,
+    has_spacenews: hasSpacenews,
+    source_titles: sourceTitles.join(", "),
+    primary_region: [...cluster.regions][0] ?? null,
+  };
+  const modelScore = modelWeights ? scoreClusterWithModel(preliminary, modelWeights) : null;
+  const finalScore = modelScore == null ? importanceScore : Math.min(0.99, Number((importanceScore * 0.72 + modelScore * 0.28).toFixed(3)));
 
   return {
     id: `${runDate}-${cluster.key}`,
@@ -148,8 +172,13 @@ function scoreCluster(cluster, runDate, now) {
     source_count: sourceCount,
     region_count: regionCount,
     language_count: languageCount,
-    importance_score: importanceScore,
-    score_reasons: reasons,
+    importance_score: finalScore,
+    deterministic_score: importanceScore,
+    model_score: modelScore == null ? null : Number(modelScore.toFixed(3)),
+    score_reasons: modelScore == null ? reasons : [...reasons, `learned editorial score: ${Math.round(modelScore * 100)}%`],
+    has_spacenews: hasSpacenews,
+    source_titles: sourceTitles.join(", "),
+    primary_region: [...cluster.regions][0] ?? null,
     item_ids: sortedItems.map((item) => item.id),
   };
 }
