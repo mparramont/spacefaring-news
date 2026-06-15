@@ -140,5 +140,5 @@ test("issue draft shows selected editorial stories", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Editorial queue" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Generate draft copy" })).toBeVisible();
   await expect(page.locator(".draft-card").first().or(page.locator(".empty"))).toBeVisible({ timeout: 10_000 });
-  await expect(page.getByText("Copy slots to fill:").first().or(page.getByText("Machine draft copy:").first()).or(page.locator(".empty"))).toBeVisible();
+  await expect(page.locator(".copy-slots, .empty").first()).toBeVisible();
 });
