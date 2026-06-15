@@ -621,7 +621,7 @@ button:hover, button:focus-visible {
 }
 .decision-form {
   display: grid;
-  grid-template-columns: minmax(130px, 0.7fr) minmax(90px, 0.35fr) minmax(220px, 1fr) auto;
+  grid-template-columns: minmax(9rem, 0.8fr) minmax(6rem, 0.4fr) minmax(0, 1.3fr) auto;
   gap: 0.75rem;
   align-items: end;
   margin-top: 1rem;
@@ -632,8 +632,12 @@ button:hover, button:focus-visible {
   color: var(--muted);
   font-size: 0.82rem;
   font-weight: 700;
+  min-width: 0;
 }
-.decision-form .note-label {
+.decision-form input,
+.decision-form select,
+.decision-form textarea {
+  width: 100%;
   min-width: 0;
 }
 .decision-form textarea {
@@ -642,9 +646,21 @@ button:hover, button:focus-visible {
 .empty {
   color: var(--muted);
 }
+@media (max-width: 980px) {
+  .decision-form {
+    grid-template-columns: minmax(10rem, 1fr) minmax(6rem, 0.5fr) minmax(14rem, 1fr);
+  }
+  .decision-form button {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+}
 @media (max-width: 760px) {
   .cluster-head, .decision-form {
     grid-template-columns: 1fr;
+  }
+  .decision-form button {
+    justify-self: stretch;
   }
 }
 `;
