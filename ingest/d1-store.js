@@ -159,6 +159,19 @@ export class D1NewsStore {
       .bind(run.id, run.run_date, run.started_at, run.finished_at, run.item_count, run.cluster_count, run.method, run.notes)
       .run();
 
+    const currentClusterIds = new Set(run.clusters.map((cluster) => cluster.id));
+    const existingForDate = await this.db
+      .prepare("SELECT id FROM story_clusters WHERE run_date = ?")
+      .bind(run.run_date)
+      .all();
+
+    for (const existing of existingForDate.results ?? []) {
+      if (!currentClusterIds.has(existing.id)) {
+        await this.db.prepare("DELETE FROM story_cluster_items WHERE cluster_id = ?").bind(existing.id).run();
+        await this.db.prepare("DELETE FROM story_clusters WHERE id = ?").bind(existing.id).run();
+      }
+    }
+
     for (const cluster of run.clusters) {
       const existing = await this.db
         .prepare("SELECT status, editor_note, selected_position, created_at FROM story_clusters WHERE id = ?")
