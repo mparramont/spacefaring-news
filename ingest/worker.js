@@ -311,6 +311,7 @@ function renderEditorialCluster(cluster, index) {
   const reasons = cluster.score_reasons?.length
     ? `<ul class="reasons">${cluster.score_reasons.map((reason) => `<li>${escapeHtml(reason)}</li>`).join("")}</ul>`
     : "";
+  const mainSource = mainSourceTitle(cluster);
   return `<article class="cluster-card" data-status="${escapeAttr(cluster.status)}">
     <div class="cluster-head">
       <p class="rank">#${index + 1}</p>
@@ -318,6 +319,7 @@ function renderEditorialCluster(cluster, index) {
       <p class="score">${Math.round(cluster.importance_score * 100)}%</p>
     </div>
     <p class="cluster-meta">${escapeHtml(cluster.status)} / ${cluster.source_count} source${cluster.source_count === 1 ? "" : "s"} / ${cluster.region_count} region${cluster.region_count === 1 ? "" : "s"} / ${cluster.language_count} language${cluster.language_count === 1 ? "" : "s"}${cluster.model_score == null ? "" : ` / model ${Math.round(cluster.model_score * 100)}%`}${cluster.has_spacenews ? " / SpaceNews seed" : ""}</p>
+    ${mainSource ? `<p class="story-source">Main source: ${escapeHtml(mainSource)}</p>` : ""}
     ${cluster.summary ? `<p class="summary">${escapeHtml(cluster.summary)}</p>` : ""}
     ${reasons}
     <form method="post" action="/admin/story-decision" class="decision-form">
@@ -342,6 +344,13 @@ function renderEditorialCluster(cluster, index) {
       <button type="submit">Save</button>
     </form>
   </article>`;
+}
+
+function mainSourceTitle(cluster) {
+  return String(cluster.source_titles ?? "")
+    .split(",")
+    .map((source) => source.trim())
+    .filter(Boolean)[0] ?? "";
 }
 
 function renderStatusOption(current, value, label) {
@@ -608,10 +617,13 @@ button:hover, button:focus-visible {
   color: var(--muted);
   font-weight: 700;
 }
-.cluster-meta, .summary {
+.cluster-meta, .story-source, .summary {
   margin: 0.5rem 0 0;
   color: var(--muted);
   font-size: 0.9rem;
+}
+.story-source {
+  color: var(--fg);
 }
 .reasons {
   margin: 0.75rem 0 0;
