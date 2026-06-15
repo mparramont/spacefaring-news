@@ -1,5 +1,6 @@
 import { D1NewsStore } from "./d1-store.js";
 import { ingestFeeds } from "./ingest.js";
+import { rankDailyStories } from "./ranking.js";
 import { ingestXPosts } from "./x.js";
 
 export default {
@@ -22,6 +23,20 @@ export default {
 
     if (request.method === "GET" && url.pathname === "/stats") {
       return json(await store.stats());
+    }
+
+    if (request.method === "GET" && url.pathname === "/admin/editorial") {
+      return html(await renderEditorialAdmin(store, { refresh: url.searchParams.get("refresh") === "1" }));
+    }
+
+    if (request.method === "POST" && url.pathname === "/admin/rankings/run") {
+      await runDailyRanking(store, new Date());
+      return html(await renderEditorialAdmin(store, { notice: "Ranking run completed." }));
+    }
+
+    if (request.method === "POST" && url.pathname === "/admin/story-decision") {
+      await updateStoryDecision(request, store);
+      return html(await renderEditorialAdmin(store, { notice: "Decision saved." }));
     }
 
     if (request.method === "GET" && url.pathname === "/sources") {
@@ -53,6 +68,7 @@ async function runScheduledIngestion(env) {
   await ingestFeeds(store, { now });
 
   if (!env.X_BEARER_TOKEN) {
+    await runDailyRanking(store, now);
     return;
   }
 
@@ -73,11 +89,62 @@ async function runScheduledIngestion(env) {
   } finally {
     await store.finishDailyPoll("x-daily", new Date().toISOString());
   }
+
+  await runDailyRanking(store, now);
 }
 
 function parseLimit(value) {
   const parsed = Number(value ?? 50);
   return Number.isFinite(parsed) ? Math.max(1, Math.min(Math.trunc(parsed), 100)) : 50;
+}
+
+async function runDailyRanking(store, now) {
+  const since = new Date(now.getTime() - 36 * 60 * 60 * 1000).toISOString();
+  const items = await store.recentItemsForRanking(since, 300);
+  const ranking = rankDailyStories(items, { now, runDate: now.toISOString().slice(0, 10) });
+  await store.saveRankingRun(ranking);
+  return ranking;
+}
+
+async function renderEditorialAdmin(store, options = {}) {
+  const latest = options.refresh ? await runDailyRanking(store, new Date()) : await latestOrGeneratedRanking(store);
+  const clusters = latest ? await store.storyClusters(latest.run_date, 50) : [];
+  return renderEditorialDocument({ latest, clusters, notice: options.notice });
+}
+
+async function latestOrGeneratedRanking(store) {
+  const latest = await store.latestRankingRun();
+  const now = new Date();
+  if (latest?.run_date === now.toISOString().slice(0, 10)) return latest;
+  return runDailyRanking(store, now);
+}
+
+async function updateStoryDecision(request, store) {
+  const form = await request.formData();
+  const id = String(form.get("id") ?? "");
+  const status = normalizeStatus(form.get("status"));
+  const selectedPositionValue = String(form.get("selected_position") ?? "").trim();
+  const selectedPosition = selectedPositionValue ? Number(selectedPositionValue) : null;
+  const editorNote = String(form.get("editor_note") ?? "").trim() || null;
+
+  if (!id) {
+    throw new Error("Missing story cluster id");
+  }
+
+  await store.updateStoryClusterDecision(
+    id,
+    {
+      status,
+      selectedPosition: Number.isFinite(selectedPosition) ? Math.max(1, Math.trunc(selectedPosition)) : null,
+      editorNote,
+    },
+    new Date().toISOString(),
+  );
+}
+
+function normalizeStatus(value) {
+  const status = String(value ?? "");
+  return ["needs_review", "approved", "watch", "rejected"].includes(status) ? status : "needs_review";
 }
 
 function json(body, status = 200) {
@@ -149,6 +216,84 @@ function renderSourcesFragment(sources, query) {
     ...filtered.map(renderSourceCard),
     `</section>`,
   ].join("");
+}
+
+function renderEditorialDocument({ latest, clusters, notice }) {
+  const runMeta = latest
+    ? `${escapeHtml(latest.run_date)} / ${latest.cluster_count} clusters / ${latest.item_count} items / ${escapeHtml(latest.method)}`
+    : "No ranking run stored.";
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <title>Editorial Admin - Spacefaring News</title>
+    <style>${ADMIN_DOCUMENT_CSS}</style>
+  </head>
+  <body>
+    <div class="wrap admin-wrap">
+      <header class="site">
+        <p><a class="brand" href="https://spacefaring-news.pages.dev/">Spacefaring News</a></p>
+      </header>
+      <main>
+        <p class="eyebrow">ADMIN</p>
+        <h1>Editorial Queue</h1>
+        ${notice ? `<p class="notice">${escapeHtml(notice)}</p>` : ""}
+        <section class="admin-panel" aria-label="Ranking run">
+          <p class="run-meta">${runMeta}</p>
+          <form method="post" action="/admin/rankings/run">
+            <button type="submit">Run ranking</button>
+          </form>
+        </section>
+        <section class="cluster-list" aria-label="Story clusters">
+          ${clusters.length ? clusters.map(renderEditorialCluster).join("") : `<p class="empty">No story clusters stored.</p>`}
+        </section>
+      </main>
+    </div>
+  </body>
+</html>`;
+}
+
+function renderEditorialCluster(cluster, index) {
+  const reasons = cluster.score_reasons?.length
+    ? `<ul class="reasons">${cluster.score_reasons.map((reason) => `<li>${escapeHtml(reason)}</li>`).join("")}</ul>`
+    : "";
+  return `<article class="cluster-card" data-status="${escapeAttr(cluster.status)}">
+    <div class="cluster-head">
+      <p class="rank">#${index + 1}</p>
+      <h2><a href="${escapeAttr(cluster.representative_url)}" rel="noopener noreferrer">${escapeHtml(cluster.representative_title)}</a></h2>
+      <p class="score">${Math.round(cluster.importance_score * 100)}%</p>
+    </div>
+    <p class="cluster-meta">${escapeHtml(cluster.status)} / ${cluster.source_count} source${cluster.source_count === 1 ? "" : "s"} / ${cluster.region_count} region${cluster.region_count === 1 ? "" : "s"} / ${cluster.language_count} language${cluster.language_count === 1 ? "" : "s"}</p>
+    ${cluster.summary ? `<p class="summary">${escapeHtml(cluster.summary)}</p>` : ""}
+    ${reasons}
+    <form method="post" action="/admin/story-decision" class="decision-form">
+      <input type="hidden" name="id" value="${escapeAttr(cluster.id)}" />
+      <label>
+        Status
+        <select name="status">
+          ${renderStatusOption(cluster.status, "needs_review", "Needs review")}
+          ${renderStatusOption(cluster.status, "approved", "Approved")}
+          ${renderStatusOption(cluster.status, "watch", "Watch")}
+          ${renderStatusOption(cluster.status, "rejected", "Rejected")}
+        </select>
+      </label>
+      <label>
+        Position
+        <input name="selected_position" inputmode="numeric" value="${cluster.selected_position ?? ""}" />
+      </label>
+      <label class="note-label">
+        Note
+        <textarea name="editor_note" rows="2">${escapeHtml(cluster.editor_note ?? "")}</textarea>
+      </label>
+      <button type="submit">Save</button>
+    </form>
+  </article>`;
+}
+
+function renderStatusOption(current, value, label) {
+  return `<option value="${value}"${current === value ? " selected" : ""}>${label}</option>`;
 }
 
 function renderSourcesDocument(fragment) {
@@ -279,6 +424,176 @@ h1 {
   .wrap { padding: 1.25rem 1rem 3rem; }
   .source-card-header { grid-template-columns: 1fr; gap: 2px; }
   .source-meta { white-space: normal; }
+}
+`;
+
+const ADMIN_DOCUMENT_CSS = `
+:root {
+  color-scheme: light;
+  --fg: #111;
+  --muted: #555;
+  --border: #d4d4d4;
+  --border-strong: #b8b8b8;
+  --bg: #fff;
+  --card-bg: #fff;
+  --card-tint: #fafafa;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --fg: #f0f0f0;
+    --muted: #999;
+    --border: #333;
+    --border-strong: #555;
+    --bg: #0a0a0a;
+    --card-bg: #111;
+    --card-tint: #151515;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  color: var(--fg);
+  background: var(--bg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.55;
+}
+.wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 4rem;
+}
+header.site {
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2rem;
+}
+header.site p { margin: 0 0 0.25rem; }
+header.site a.brand {
+  color: var(--fg);
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+.eyebrow {
+  margin: 0 0 0.25rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+h1 {
+  margin: 0 0 1rem;
+  font-size: 2rem;
+  line-height: 1.2;
+}
+h2, p, li, label, input, textarea, select, button {
+  overflow-wrap: anywhere;
+}
+.notice {
+  border: 1px solid var(--border);
+  background: var(--card-tint);
+  padding: 0.7rem 0.85rem;
+}
+.admin-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 1rem;
+  margin: 1rem 0;
+}
+.run-meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+button, select, input, textarea {
+  min-height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.45rem 0.65rem;
+  color: var(--fg);
+  background: var(--card-bg);
+  font: inherit;
+}
+button {
+  font-weight: 700;
+  cursor: pointer;
+}
+button:hover, button:focus-visible {
+  border-color: var(--fg);
+}
+.cluster-list {
+  display: grid;
+  gap: 1rem;
+}
+.cluster-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  background: var(--card-bg);
+}
+.cluster-card[data-status="approved"] { border-color: var(--fg); }
+.cluster-card[data-status="rejected"] { opacity: 0.72; }
+.cluster-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.8rem;
+  align-items: baseline;
+}
+.cluster-head h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  line-height: 1.25;
+}
+.cluster-head a {
+  color: var(--fg);
+}
+.rank, .score {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 700;
+}
+.cluster-meta, .summary {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.reasons {
+  margin: 0.75rem 0 0;
+  padding-left: 1.2rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+.decision-form {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.7fr) minmax(90px, 0.35fr) minmax(220px, 1fr) auto;
+  gap: 0.75rem;
+  align-items: end;
+  margin-top: 1rem;
+}
+.decision-form label {
+  display: grid;
+  gap: 0.25rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+.decision-form .note-label {
+  min-width: 0;
+}
+.decision-form textarea {
+  resize: vertical;
+}
+.empty {
+  color: var(--muted);
+}
+@media (max-width: 760px) {
+  .cluster-head, .decision-form {
+    grid-template-columns: 1fr;
+  }
 }
 `;
 

@@ -34,6 +34,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Ranking tests
+        run: npm run test:ranking
+
       - name: Rust tests
         run: cargo test --manifest-path backend/Cargo.toml
 

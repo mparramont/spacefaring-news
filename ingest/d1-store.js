@@ -119,6 +119,163 @@ export class D1NewsStore {
       .all();
   }
 
+  async recentItemsForRanking(since, limit = 200) {
+    const result = await this.db
+      .prepare(
+        `SELECT
+          items.id,
+          items.source_id,
+          items.source_title,
+          items.title,
+          items.url,
+          items.summary,
+          items.author,
+          items.published_at,
+          items.fetched_at,
+          items.guid,
+          sources.category,
+          sources.language,
+          sources.region
+        FROM news_items AS items
+        LEFT JOIN news_sources AS sources
+          ON sources.id = items.source_id
+        WHERE COALESCE(items.published_at, items.fetched_at) >= ?
+        ORDER BY COALESCE(items.published_at, items.fetched_at) DESC
+        LIMIT ?`,
+      )
+      .bind(since, limit)
+      .all();
+
+    return result.results ?? [];
+  }
+
+  async saveRankingRun(run) {
+    await this.db
+      .prepare(
+        `INSERT INTO ranking_runs
+          (id, run_date, started_at, finished_at, item_count, cluster_count, method, notes)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .bind(run.id, run.run_date, run.started_at, run.finished_at, run.item_count, run.cluster_count, run.method, run.notes)
+      .run();
+
+    for (const cluster of run.clusters) {
+      const existing = await this.db
+        .prepare("SELECT status, editor_note, selected_position, created_at FROM story_clusters WHERE id = ?")
+        .bind(cluster.id)
+        .first();
+
+      await this.db
+        .prepare(
+          `INSERT INTO story_clusters
+            (id, run_date, cluster_key, representative_title, representative_url, summary,
+             source_count, region_count, language_count, importance_score, score_reasons_json,
+             status, editor_note, selected_position, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT(id) DO UPDATE SET
+             representative_title = excluded.representative_title,
+             representative_url = excluded.representative_url,
+             summary = excluded.summary,
+             source_count = excluded.source_count,
+             region_count = excluded.region_count,
+             language_count = excluded.language_count,
+             importance_score = excluded.importance_score,
+             score_reasons_json = excluded.score_reasons_json,
+             updated_at = excluded.updated_at`,
+        )
+        .bind(
+          cluster.id,
+          cluster.run_date,
+          cluster.cluster_key,
+          cluster.representative_title,
+          cluster.representative_url,
+          cluster.summary,
+          cluster.source_count,
+          cluster.region_count,
+          cluster.language_count,
+          cluster.importance_score,
+          JSON.stringify(cluster.score_reasons),
+          existing?.status ?? "needs_review",
+          existing?.editor_note ?? null,
+          existing?.selected_position ?? null,
+          existing?.created_at ?? run.started_at,
+          run.finished_at,
+        )
+        .run();
+
+      await this.db.prepare("DELETE FROM story_cluster_items WHERE cluster_id = ?").bind(cluster.id).run();
+      for (const itemId of cluster.item_ids) {
+        await this.db
+          .prepare("INSERT OR IGNORE INTO story_cluster_items (cluster_id, item_id) VALUES (?, ?)")
+          .bind(cluster.id, itemId)
+          .run();
+      }
+    }
+  }
+
+  async latestRankingRun() {
+    return this.db
+      .prepare(
+        `SELECT id, run_date, started_at, finished_at, item_count, cluster_count, method, notes
+         FROM ranking_runs
+         ORDER BY started_at DESC
+         LIMIT 1`,
+      )
+      .first();
+  }
+
+  async storyClusters(runDate, limit = 50) {
+    const result = await this.db
+      .prepare(
+        `SELECT
+          id,
+          run_date,
+          representative_title,
+          representative_url,
+          summary,
+          source_count,
+          region_count,
+          language_count,
+          importance_score,
+          score_reasons_json,
+          status,
+          editor_note,
+          selected_position,
+          updated_at
+        FROM story_clusters
+        WHERE run_date = ?
+        ORDER BY
+          CASE status
+            WHEN 'approved' THEN 0
+            WHEN 'needs_review' THEN 1
+            WHEN 'watch' THEN 2
+            WHEN 'rejected' THEN 3
+            ELSE 4
+          END,
+          COALESCE(selected_position, 9999) ASC,
+          importance_score DESC
+        LIMIT ?`,
+      )
+      .bind(runDate, limit)
+      .all();
+
+    return (result.results ?? []).map((cluster) => ({
+      ...cluster,
+      score_reasons: parseJsonArray(cluster.score_reasons_json),
+    }));
+  }
+
+  async updateStoryClusterDecision(id, decision, now) {
+    await this.db
+      .prepare(
+        `UPDATE story_clusters
+         SET status = ?, editor_note = ?, selected_position = ?, updated_at = ?
+         WHERE id = ?`,
+      )
+      .bind(decision.status, decision.editorNote, decision.selectedPosition, now, id)
+      .run();
+  }
+
   async sourcesWithLatest() {
     const result = await this.db
       .prepare(
@@ -209,6 +366,15 @@ export class D1NewsStore {
       .prepare("UPDATE poll_state SET last_finished_at = ?, updated_at = ? WHERE id = ?")
       .bind(now, now, id)
       .run();
+  }
+}
+
+function parseJsonArray(value) {
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
   }
 }
 

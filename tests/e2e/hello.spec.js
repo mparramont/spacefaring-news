@@ -111,3 +111,17 @@ test("direct sources fragment URL is readable as a styled page", async ({ page }
   await expectThemeLoaded(page, "header.site");
   await expectSourcesLoaded(page);
 });
+
+test("editorial admin shows ranked story controls", async ({ page }) => {
+  test.skip(!liveSources, "Editorial admin is served by the deployed ingestion Worker.");
+
+  await page.goto("https://spacefaring-news-ingest.mparramont.workers.dev/admin/editorial");
+
+  await expect(page).toHaveTitle("Editorial Admin - Spacefaring News");
+  await expectThemeLoaded(page, "header.site");
+  await expect(page.getByRole("heading", { name: "Editorial Queue" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Run ranking" })).toBeVisible();
+  await expect(page.locator(".cluster-card").first()).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator(".decision-form").first()).toBeVisible();
+  await expect(page.locator("select[name='status']").first()).toBeVisible();
+});
