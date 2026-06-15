@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { draftCopyMessages, normalizeDraftCopy, parseDraftCopyResponse } from "../ingest/draft-copy.js";
+import { draftCopyMessages, generateDraftCopy, normalizeDraftCopy, parseDraftCopyResponse } from "../ingest/draft-copy.js";
 
 test("builds bounded draft-copy prompts without editorial voice", () => {
   const messages = draftCopyMessages({
@@ -34,4 +34,36 @@ test("parses and normalizes JSON draft-copy responses", () => {
     why_it_matters: "The mission adds near-term launch context.",
     source_context: "Based on Spaceflight Now coverage.",
   });
+});
+
+test("retries malformed model output once", async () => {
+  const calls = [];
+  const ai = {
+    async run(_model, body) {
+      calls.push(body);
+      return calls.length === 1
+        ? { response: "not json" }
+        : {
+            response: JSON.stringify({
+              headline: "Launch update",
+              why_it_matters: "The mission adds launch context.",
+              source_context: "Based on Spaceflight Now coverage.",
+            }),
+          };
+    },
+  };
+
+  const copy = await generateDraftCopy(
+    {
+      representative_title: "Rocket launch update",
+      summary: "A mission is scheduled today.",
+      source_titles: "Spaceflight Now",
+      score_reasons: [],
+    },
+    ai,
+    { model: "test-model" },
+  );
+
+  assert.equal(calls.length, 2);
+  assert.equal(copy.headline, "Launch update");
 });

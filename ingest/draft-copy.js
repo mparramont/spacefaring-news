@@ -9,13 +9,32 @@ export async function generateDraftCopy(cluster, ai, options = {}) {
   }
 
   const model = options.model ?? DRAFT_COPY_MODEL;
-  const response = await ai.run(model, {
-    messages: draftCopyMessages(cluster),
-    max_tokens: 220,
-    temperature: 0.2,
-  });
-  const parsed = parseDraftCopyResponse(response?.response ?? response);
-  return normalizeDraftCopy(parsed);
+  let messages = draftCopyMessages(cluster);
+  let lastError;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const response = await ai.run(model, {
+      messages,
+      max_tokens: 220,
+      temperature: 0.2,
+    });
+
+    try {
+      const parsed = parseDraftCopyResponse(response?.response ?? response);
+      return normalizeDraftCopy(parsed);
+    } catch (error) {
+      lastError = error;
+      messages = [
+        ...draftCopyMessages(cluster),
+        {
+          role: "user",
+          content: "Return only minified valid JSON. No markdown. No intro. Keys: headline, why_it_matters, source_context.",
+        },
+      ];
+    }
+  }
+
+  throw lastError;
 }
 
 export function draftCopyMessages(cluster) {

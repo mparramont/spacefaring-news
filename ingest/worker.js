@@ -37,9 +37,9 @@ export default {
 
     if (request.method === "POST" && url.pathname === "/admin/issue-draft/generate") {
       const result = await generateIssueDraftCopies(store, env, new Date());
-      const notice = result.failed
-        ? `${result.generated} draft copies generated. ${result.failed} failed.`
-        : `${result.generated} draft copies generated.`;
+      const skipped = result.skipped ? ` ${result.skipped} already existed.` : "";
+      const failed = result.failed ? ` ${result.failed} failed.` : "";
+      const notice = `${result.generated} draft copies generated.${skipped}${failed}`;
       return html(await renderIssueDraftAdmin(store, { notice }));
     }
 
@@ -176,10 +176,17 @@ async function generateIssueDraftCopies(store, env, now) {
   const latest = await latestOrGeneratedRanking(store);
   const clusters = latest ? await store.storyClusters(latest.run_date, 50) : [];
   const selectedClusters = clusters.filter((cluster) => ["approved", "watch"].includes(cluster.status));
+  const existingCopies = await store.issueDraftCopies(selectedClusters.map((cluster) => cluster.id));
   let generated = 0;
+  let skipped = 0;
   let failed = 0;
 
   for (const cluster of selectedClusters) {
+    if (existingCopies.has(cluster.id)) {
+      skipped += 1;
+      continue;
+    }
+
     try {
       const draftCopy = await generateDraftCopy(cluster, env.AI);
       await store.saveIssueDraftCopy({
@@ -199,7 +206,7 @@ async function generateIssueDraftCopies(store, env, now) {
     }
   }
 
-  return { generated, failed };
+  return { generated, skipped, failed };
 }
 
 async function latestOrGeneratedRanking(store) {
