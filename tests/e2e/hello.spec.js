@@ -123,7 +123,21 @@ test("editorial admin shows ranked story controls", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Run ranking" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Train model" })).toBeVisible();
   await expect(page.getByText("Learned Scoring")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Issue draft" })).toBeVisible();
   await expect(page.locator(".cluster-card").first()).toBeVisible({ timeout: 10_000 });
   await expect(page.locator(".decision-form").first()).toBeVisible();
   await expect(page.locator("select[name='status']").first()).toBeVisible();
+});
+
+test("issue draft shows selected editorial stories", async ({ page }) => {
+  test.skip(!liveSources, "Issue draft is served by the deployed ingestion Worker.");
+
+  await page.goto("https://spacefaring-news-ingest.mparramont.workers.dev/admin/issue-draft");
+
+  await expect(page).toHaveTitle("Issue Draft - Spacefaring News");
+  await expectThemeLoaded(page, "header.site");
+  await expect(page.getByRole("heading", { name: "Issue Draft" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Editorial queue" })).toBeVisible();
+  await expect(page.locator(".draft-card").first().or(page.locator(".empty"))).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText("Copy slots to fill:").first().or(page.locator(".empty"))).toBeVisible();
 });

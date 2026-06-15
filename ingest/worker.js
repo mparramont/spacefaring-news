@@ -30,6 +30,10 @@ export default {
       return html(await renderEditorialAdmin(store, { refresh: url.searchParams.get("refresh") === "1" }));
     }
 
+    if (request.method === "GET" && url.pathname === "/admin/issue-draft") {
+      return html(await renderIssueDraftAdmin(store));
+    }
+
     if (request.method === "POST" && url.pathname === "/admin/model/train") {
       await runModelTraining(store, new Date());
       await runDailyRanking(store, new Date());
@@ -149,6 +153,13 @@ async function renderEditorialAdmin(store, options = {}) {
   }
 
   return renderEditorialDocument({ latest, clusters, modelRun, weights, notice: options.notice });
+}
+
+async function renderIssueDraftAdmin(store) {
+  const latest = await latestOrGeneratedRanking(store);
+  const clusters = latest ? await store.storyClusters(latest.run_date, 50) : [];
+  const selectedClusters = clusters.filter((cluster) => ["approved", "watch"].includes(cluster.status));
+  return renderIssueDraftDocument({ latest, clusters: selectedClusters });
 }
 
 async function latestOrGeneratedRanking(store) {
@@ -281,6 +292,9 @@ function renderEditorialDocument({ latest, clusters, modelRun, weights, notice }
       <main>
         <p class="eyebrow">ADMIN</p>
         <h1>Editorial Queue</h1>
+        <nav class="admin-nav" aria-label="Admin views">
+          <a href="/admin/issue-draft">Issue draft</a>
+        </nav>
         ${notice ? `<p class="notice">${escapeHtml(notice)}</p>` : ""}
         <section class="admin-panel" aria-label="Ranking run">
           <p class="run-meta">${runMeta}</p>
@@ -300,6 +314,47 @@ function renderEditorialDocument({ latest, clusters, modelRun, weights, notice }
         </section>
         <section class="cluster-list" aria-label="Story clusters">
           ${clusters.length ? clusters.map(renderEditorialCluster).join("") : `<p class="empty">No story clusters stored.</p>`}
+        </section>
+      </main>
+    </div>
+  </body>
+</html>`;
+}
+
+function renderIssueDraftDocument({ latest, clusters }) {
+  const runMeta = latest
+    ? `${escapeHtml(latest.run_date)} / ${latest.cluster_count} clusters / ${latest.item_count} items / ${escapeHtml(latest.method)}`
+    : "No ranking run stored.";
+  const approvedCount = clusters.filter((cluster) => cluster.status === "approved").length;
+  const watchCount = clusters.filter((cluster) => cluster.status === "watch").length;
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <title>Issue Draft - Spacefaring News</title>
+    <style>${ADMIN_DOCUMENT_CSS}</style>
+  </head>
+  <body>
+    <div class="wrap admin-wrap">
+      <header class="site">
+        <p><a class="brand" href="https://spacefaring-news.pages.dev/">Spacefaring News</a></p>
+      </header>
+      <main>
+        <p class="eyebrow">ADMIN</p>
+        <h1>Issue Draft</h1>
+        <nav class="admin-nav" aria-label="Admin views">
+          <a href="/admin/editorial">Editorial queue</a>
+        </nav>
+        <section class="admin-panel" aria-label="Draft status">
+          <div>
+            <p class="run-meta">${runMeta}</p>
+            <p class="run-meta">${approvedCount} approved / ${watchCount} watch</p>
+          </div>
+        </section>
+        <section class="draft-list" aria-label="Selected stories">
+          ${clusters.length ? clusters.map(renderDraftCluster).join("") : `<p class="empty">No approved or watch stories yet.</p>`}
         </section>
       </main>
     </div>
@@ -346,11 +401,48 @@ function renderEditorialCluster(cluster, index) {
   </article>`;
 }
 
+function renderDraftCluster(cluster, index) {
+  const mainSource = mainSourceTitle(cluster);
+  const reasons = cluster.score_reasons?.length
+    ? `<ul class="reasons">${cluster.score_reasons.map((reason) => `<li>${escapeHtml(reason)}</li>`).join("")}</ul>`
+    : "";
+  const position = cluster.selected_position ? `Position ${cluster.selected_position}` : `Draft item ${index + 1}`;
+  return `<article class="draft-card" data-status="${escapeAttr(cluster.status)}">
+    <div class="cluster-head">
+      <p class="rank">${escapeHtml(position)}</p>
+      <h2><a href="${escapeAttr(cluster.representative_url)}" rel="noopener noreferrer">${escapeHtml(cluster.representative_title)}</a></h2>
+      <p class="score">${Math.round(cluster.importance_score * 100)}%</p>
+    </div>
+    <p class="cluster-meta">${escapeHtml(statusLabel(cluster.status))}${cluster.model_score == null ? "" : ` / model ${Math.round(cluster.model_score * 100)}%`}</p>
+    ${mainSource ? `<p class="story-source">Main source: ${escapeHtml(mainSource)}</p>` : ""}
+    ${cluster.summary ? `<p class="summary">${escapeHtml(cluster.summary)}</p>` : ""}
+    ${cluster.editor_note ? `<p class="editor-note"><span>Editor note:</span> ${escapeHtml(cluster.editor_note)}</p>` : ""}
+    <div class="copy-slots" aria-label="Copy slots to fill">
+      <p>Copy slots to fill:</p>
+      <ul>
+        <li>Newsletter headline</li>
+        <li>Why it matters note</li>
+        <li>Source/context note</li>
+      </ul>
+    </div>
+    ${reasons}
+  </article>`;
+}
+
 function mainSourceTitle(cluster) {
   return String(cluster.source_titles ?? "")
     .split(",")
     .map((source) => source.trim())
     .filter(Boolean)[0] ?? "";
+}
+
+function statusLabel(status) {
+  return {
+    approved: "Approved",
+    watch: "Watch",
+    rejected: "Rejected",
+    needs_review: "Needs review",
+  }[status] ?? status;
 }
 
 function renderStatusOption(current, value, label) {
@@ -555,6 +647,16 @@ h2, p, li, label, input, textarea, select, button {
   background: var(--card-tint);
   padding: 0.7rem 0.85rem;
 }
+.admin-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+}
+.admin-nav a {
+  color: var(--fg);
+  font-weight: 700;
+}
 .admin-panel {
   display: flex;
   flex-wrap: wrap;
@@ -590,7 +692,12 @@ button:hover, button:focus-visible {
   display: grid;
   gap: 1rem;
 }
-.cluster-card {
+.draft-list {
+  display: grid;
+  gap: 1rem;
+}
+.cluster-card,
+.draft-card {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 1rem;
@@ -598,6 +705,8 @@ button:hover, button:focus-visible {
 }
 .cluster-card[data-status="approved"] { border-color: var(--fg); }
 .cluster-card[data-status="rejected"] { opacity: 0.72; }
+.draft-card[data-status="approved"] { border-color: var(--fg); }
+.draft-card[data-status="watch"] { border-style: dashed; }
 .cluster-head {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -624,6 +733,30 @@ button:hover, button:focus-visible {
 }
 .story-source {
   color: var(--fg);
+}
+.editor-note {
+  border-left: 3px solid var(--border-strong);
+  padding-left: 0.75rem;
+}
+.editor-note span {
+  font-weight: 700;
+}
+.copy-slots {
+  margin-top: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem;
+  background: var(--card-tint);
+}
+.copy-slots p {
+  margin: 0;
+  font-weight: 700;
+}
+.copy-slots ul {
+  margin: 0.35rem 0 0;
+  padding-left: 1.2rem;
+  color: var(--muted);
+  font-size: 0.88rem;
 }
 .reasons {
   margin: 0.75rem 0 0;
