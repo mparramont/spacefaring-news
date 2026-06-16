@@ -1,5 +1,6 @@
 const SUBSCRIBE_SUCCESS: &[u8] = br#"<div class="notice success blog-card" data-testid="signup-success"><strong>You've joined the manifest.</strong><span>Spacefaring News dispatch coming soon.</span></div>"#;
 const SUBSCRIBE_INVALID: &[u8] = br#"<div class="notice error blog-card" data-testid="signup-error"><strong>Use a valid email address.</strong></div>"#;
+const SUBSCRIBE_DUPLICATE: &[u8] = br#"<div class="notice info blog-card" data-testid="signup-duplicate"><strong>Already on board.</strong><span>This email is already subscribed to Spacefaring News.</span></div>"#;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FeedSource {
@@ -435,6 +436,16 @@ pub extern "C" fn subscribe_invalid_len() -> usize {
     SUBSCRIBE_INVALID.len()
 }
 
+#[no_mangle]
+pub extern "C" fn subscribe_duplicate_ptr() -> *const u8 {
+    SUBSCRIBE_DUPLICATE.as_ptr()
+}
+
+#[no_mangle]
+pub extern "C" fn subscribe_duplicate_len() -> usize {
+    SUBSCRIBE_DUPLICATE.len()
+}
+
 fn source_latest_date(source: &SourceView) -> Option<&str> {
     source
         .latest_item_published_at
@@ -472,9 +483,12 @@ mod tests {
     fn renders_newsletter_fragments() {
         let success = std::str::from_utf8(SUBSCRIBE_SUCCESS).expect("fragment is valid utf-8");
         let invalid = std::str::from_utf8(SUBSCRIBE_INVALID).expect("fragment is valid utf-8");
+        let duplicate = std::str::from_utf8(SUBSCRIBE_DUPLICATE).expect("fragment is valid utf-8");
 
         assert!(success.contains("You've joined the manifest."));
         assert!(success.contains("Spacefaring News dispatch coming soon."));
         assert!(invalid.contains("Use a valid email address."));
+        assert!(duplicate.contains("Already on board."));
+        assert!(duplicate.contains("already subscribed to Spacefaring News"));
     }
 }

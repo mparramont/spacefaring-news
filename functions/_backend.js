@@ -33,3 +33,13 @@ export async function renderSubscribeInvalid() {
     backend.subscribe_invalid_len(),
   );
 }
+
+export async function renderSubscribeDuplicate() {
+  const backend = await getBackend();
+
+  return readFragment(
+    backend,
+    backend.subscribe_duplicate_ptr(),
+    backend.subscribe_duplicate_len(),
+  );
+}
