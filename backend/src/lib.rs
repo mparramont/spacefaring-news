@@ -1,6 +1,6 @@
-const SUBSCRIBE_SUCCESS: &[u8] = br#"<div class="notice success blog-card" data-testid="signup-success"><strong>You've joined the manifest.</strong><span>Spacefaring News dispatch coming soon.</span></div>"#;
-const SUBSCRIBE_INVALID: &[u8] = br#"<div class="notice error blog-card" data-testid="signup-error"><strong>Use a valid email address.</strong></div>"#;
-const SUBSCRIBE_DUPLICATE: &[u8] = br#"<div class="notice info blog-card" data-testid="signup-duplicate"><strong>Already on board.</strong><span>This email is already subscribed to Spacefaring News.</span></div>"#;
+pub const SUBSCRIBE_SUCCESS: &[u8] = br#"<div class="notice success blog-card" data-testid="signup-success"><strong>You've joined the manifest.</strong><span>Spacefaring News dispatch coming soon.</span></div>"#;
+pub const SUBSCRIBE_INVALID: &[u8] = br#"<div class="notice error blog-card" data-testid="signup-error"><strong>Use a valid email address.</strong></div>"#;
+pub const SUBSCRIBE_DUPLICATE: &[u8] = br#"<div class="notice info blog-card" data-testid="signup-duplicate"><strong>Already on board.</strong><span>This email is already subscribed to Spacefaring News.</span></div>"#;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FeedSource {
@@ -47,6 +47,43 @@ pub struct XPost {
     pub text: String,
     pub created_at: Option<String>,
     pub lang: Option<String>,
+}
+
+// Newsletter data structures
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct NewsletterSubscriber {
+    pub id: String,
+    pub email: String,
+    pub name: Option<String>,
+    pub subscribed_at: String,
+    pub unsubscribe_token: String,
+    pub is_active: bool,
+    pub source: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct NewsletterIssue {
+    pub id: String,
+    pub issue_number: u32,
+    pub title: String,
+    pub content_html: String,
+    pub content_text: String,
+    pub sent_at: Option<String>,
+    pub recipient_count: u32,
+    pub sent_count: u32,
+    pub bounce_count: u32,
+    pub unsubscribe_count: u32,
+    pub status: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct NewsletterSend {
+    pub id: String,
+    pub issue_id: String,
+    pub subscriber_id: String,
+    pub sent_at: String,
+    pub status: String,
+    pub bounce_reason: Option<String>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -414,6 +451,122 @@ fn short_hash(value: &str) -> String {
     }
 
     format!("{hash:016x}")
+}
+
+// Email validation for newsletter subscribers
+pub fn is_valid_email(email: &str) -> bool {
+    // Simple but practical email validation
+    // This validates the basic structure without being overly restrictive
+    if email.is_empty() {
+        return false;
+    }
+    
+    // Must contain exactly one @ symbol
+    let at_count = email.matches('@').count();
+    if at_count != 1 {
+        return false;
+    }
+    
+    // Must not contain spaces
+    if email.contains(' ') {
+        return false;
+    }
+    
+    // Split on @ and validate both parts
+    let parts: Vec<&str> = email.split('@').collect();
+    let local_part = parts[0];
+    let domain_part = parts[1];
+    
+    // Both parts must be non-empty
+    if local_part.is_empty() || domain_part.is_empty() {
+        return false;
+    }
+    
+    // Domain must contain at least one dot
+    if !domain_part.contains('.') {
+        return false;
+    }
+    
+    // Domain cannot end with a dot
+    if domain_part.ends_with('.') {
+        return false;
+    }
+    
+    // Domain cannot start with a dot
+    if domain_part.starts_with('.') {
+        return false;
+    }
+    
+    // Domain cannot have consecutive dots
+    if domain_part.contains("..") {
+        return false;
+    }
+    
+    // Local part and domain part must have valid characters
+    // This is a simplified check - in practice, we'd use a proper email validation library
+    let valid_local_chars = |c: char| -> bool {
+        c.is_ascii_alphanumeric() || 
+        ".!#$%&'*+/=?^_`{|}~-".contains(c)
+    };
+    
+    if !local_part.chars().all(valid_local_chars) {
+        return false;
+    }
+    
+    let valid_domain_chars = |c: char| -> bool {
+        c.is_ascii_alphanumeric() || c == '-' || c == '.'
+    };
+    
+    if !domain_part.chars().all(valid_domain_chars) {
+        return false;
+    }
+    
+    // Must have at least one valid character after the last dot
+    let last_dot_pos = domain_part.rfind('.').unwrap();
+    if last_dot_pos == domain_part.len() - 1 {
+        return false; // Already checked above, but being safe
+    }
+    
+    let tld = &domain_part[last_dot_pos + 1..];
+    if tld.is_empty() || !tld.chars().all(|c| c.is_ascii_alphabetic()) {
+        return false;
+    }
+    
+    true
+}
+
+// Generate a simple UUID-like string for testing purposes
+pub fn generate_test_id(prefix: &str) -> String {
+    format!("{}-{}", prefix, short_hash(&format!("{:?}", std::time::SystemTime::now())))
+}
+
+// Create test data for newsletter functionality
+pub fn create_test_subscriber(email: &str) -> NewsletterSubscriber {
+    NewsletterSubscriber {
+        id: generate_test_id("sub"),
+        email: email.to_string(),
+        name: Some("Test User".to_string()),
+        subscribed_at: "2026-01-01T00:00:00.000Z".to_string(),
+        unsubscribe_token: generate_test_id("token"),
+        is_active: true,
+        source: "test".to_string(),
+    }
+}
+
+pub fn create_test_issue(issue_number: u32) -> NewsletterIssue {
+    NewsletterIssue {
+        id: generate_test_id("issue"),
+        issue_number,
+        title: format!("Test Issue #{}", issue_number),
+        content_html: "<html><body><h1>Test Content</h1></body></html>".to_string(),
+        content_text: "Test Content".to_string(),
+        sent_at: None,
+        recipient_count: 0,
+        sent_count: 0,
+        bounce_count: 0,
+        unsubscribe_count: 0,
+        status: "draft".to_string(),
+    }
 }
 
 #[no_mangle]
